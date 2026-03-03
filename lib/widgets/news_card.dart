@@ -1,0 +1,182 @@
+import 'package:flutter/material.dart';
+import 'package:snacky/models/article.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:shimmer/shimmer.dart';
+
+class NewsCard extends StatefulWidget {
+  final Article article;
+  const NewsCard({super.key, required this.article});
+
+  @override
+  State<NewsCard> createState() => _NewsCardState();
+}
+
+class _NewsCardState extends State<NewsCard> {
+  bool _isExpanded = false;
+
+  // Fonction pour ouvrir le navigateur
+  Future<void> _launchURL() async {
+    final String? urlString = widget.article.url;
+    if (urlString != null) {
+      final Uri url = Uri.parse(urlString);
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        throw Exception('Impossible d\'ouvrir $urlString');
+      }
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant NewsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si l'article affiché par ce widget change (ex: suite à un filtrage),
+    // on force la fermeture de la carte.
+    if (oldWidget.article.title != widget.article.title) {
+      _isExpanded = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF3F51B5).withOpacity(_isExpanded ? 0.08 : 0.03),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: _isExpanded
+              ? const Color(0xFF3F51B5).withOpacity(0.3)
+              : Colors.grey.shade100,
+        ),
+      ),
+      child: InkWell(
+        onTap: () => setState(() => _isExpanded = !_isExpanded),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            children: [
+              // Dans le Row de ta NewsCard
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --- LOGIQUE D'IMAGE AVEC FALLBACK ---
+                  widget.article.image != null &&
+                          widget.article.image!.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            widget.article.image!,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            // --- EFFET SHIMMER PENDANT LE CHARGEMENT ---
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null)
+                                return child; // Image chargée
+                              return _buildShimmerPlaceholder(); // En cours de chargement
+                            },
+                            // Si l'URL est là mais que l'image ne charge pas (404, etc.)
+                            errorBuilder: (context, error, stackTrace) =>
+                                _buildPlaceholder(),
+                          ),
+                        )
+                      : _buildPlaceholder(), // Si l'URL est null ou vide
+
+                  const SizedBox(width: 12),
+
+                  // Le reste de tes infos (Titre, Source, etc.)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.article.title!,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        Text(
+                          "${widget.article.source} • ${widget.article.time}",
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    _isExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: const Color(0xFF3F51B5),
+                  ),
+                ],
+              ),
+
+              // LA PARTIE QUI SE DÉPLIE
+              ClipRect(
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 300),
+                  alignment: Alignment.topLeft,
+                  heightFactor: _isExpanded ? 1.0 : 0.0,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Divider(),
+                      Text(widget.article.description ?? ""),
+                      const SizedBox(height: 10),
+
+                      // LE BOUTON CLIQUABLE
+                      GestureDetector(
+                        onTap: _launchURL, // Appelle la fonction d'ouverture
+                        child: const Text(
+                          "Voir l'article",
+                          style: TextStyle(
+                            color: Color(0xFF3F51B5), // Ton bleu
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration
+                                .underline, // Un petit souligné pour le côté lien
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Widget _buildPlaceholder() {
+  return Container(
+    width: 50,
+    height: 50,
+    decoration: BoxDecoration(
+      color: const Color(0xFF3F51B5),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: const Icon(Icons.article, color: Colors.white),
+  );
+}
+
+Widget _buildShimmerPlaceholder() {
+  return Shimmer.fromColors(
+    baseColor: const Color(0xFF3F51B5).withOpacity(0.1),
+    highlightColor: const Color(0xFF3F51B5).withOpacity(0.05),
+    child: Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+      ),
+    ),
+  );
+}
