@@ -40,13 +40,14 @@ class ArticleRepository {
     return _fetchAndCache(userId: userId);
   }
 
-  /// Récupère les articles d'un tag spécifique
-  /// Utilise le cache si disponible, sinon fetch l'API
+  /// Récupère les articles d'un tag spécifique.
+  /// Si déjà en cache → retourne directement.
+  /// Sinon → fetch l'API et fusionne dans le cache global (visible dans "Tout").
   Future<List<Article>> getArticlesByTag({
     required String userId,
     required String tag,
   }) async {
-    // Si on a un cache frais, on filtre dessus sans appel réseau
+    // Si on a un cache frais pour ce tag, on l'utilise directement
     if (_cachedArticles.isNotEmpty) {
       final fromCache = _cachedArticles
           .where((a) => a.tags.any((t) => t.toLowerCase() == tag.toLowerCase()))
@@ -54,12 +55,26 @@ class ArticleRepository {
       if (fromCache.isNotEmpty) return fromCache;
     }
 
-    // Sinon appel API
-    final articles = await _apiService.fetchArticlesByTag(
+    // Nouveaux articles depuis l'API
+    final newArticles = await _apiService.fetchArticlesByTag(
       userId: userId,
       tag: tag,
     );
-    return articles;
+
+    // Fusion dans le cache global (évite les doublons par id)
+    final existingIds = _cachedArticles.map((a) => a.id).toSet();
+    final toAdd = newArticles
+        .where((a) => !existingIds.contains(a.id))
+        .toList();
+    if (toAdd.isNotEmpty) {
+      _cachedArticles = [..._cachedArticles, ...toAdd];
+      // Persiste le cache mis à jour
+      await _storage.writeCachedArticles(
+        _cachedArticles.map((a) => a.toJson()).toList(),
+      );
+    }
+
+    return newArticles;
   }
 
   /// Retourne le cache en mémoire

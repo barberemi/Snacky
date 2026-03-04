@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LocalStorageService {
   static const String _favoritesKey = 'favorites';
   static const String _articlesKey = 'cached_articles';
+  static const String _userTagsKey = 'user_tags'; // Nouveau
 
   final SharedPreferences _prefs;
 
@@ -46,5 +47,18 @@ class LocalStorageService {
   /// Écrit la liste des articles en cache en JSON
   Future<void> writeCachedArticles(List<Map<String, dynamic>> articles) async {
     await _prefs.setString(_articlesKey, jsonEncode(articles));
+  }
+
+  // ─── TAGS UTILISATEUR ────────────────────────────────────────────────────
+
+  /// Lit la liste des tags personnalisés de l'utilisateur
+  List<String> readUserTags() {
+    final raw = _prefs.getStringList(_userTagsKey);
+    return raw ?? [];
+  }
+
+  /// Écrit la liste des tags personnalisés
+  Future<void> writeUserTags(List<String> tags) async {
+    await _prefs.setStringList(_userTagsKey, tags);
   }
 }

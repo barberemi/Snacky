@@ -1,24 +1,47 @@
 import '../services/mock_api_service.dart';
+import '../services/local_storage_service.dart';
 
 /// Repository qui gère les tags de l'utilisateur.
-/// Les tags sont toujours rechargés depuis l'API à chaque démarrage
-/// (légers, pas besoin de cache journalier).
+/// Les tags ajoutés manuellement sont persistés via shared_preferences.
 class TagRepository {
   final MockApiService _apiService;
+  final LocalStorageService _storage;
 
-  TagRepository({MockApiService? apiService})
+  List<String> _userTags = []; // Tags personnalisés persistés
+
+  TagRepository(this._storage, {MockApiService? apiService})
     : _apiService = apiService ?? MockApiService();
 
-  List<String> _cachedTags = [];
-
-  /// Récupère les tags de l'utilisateur depuis l'API.
-  /// Ajoute automatiquement "Tout" et "Favoris" en tête.
-  Future<List<String>> getTags({required String userId}) async {
-    final userTags = await _apiService.fetchTags(userId: userId);
-    _cachedTags = ['Tout', 'Favoris', ...userTags];
-    return _cachedTags;
+  /// À appeler au démarrage pour charger les tags persistés
+  Future<void> init() async {
+    _userTags = _storage.readUserTags();
   }
 
-  List<String> getCachedTags() =>
-      _cachedTags.isEmpty ? ['Tout', 'Favoris'] : _cachedTags;
+  /// Récupère les tags : "Tout" + "Favoris" + tags API + tags ajoutés par l'user
+  Future<List<String>> getTags({required String userId}) async {
+    final apiTags = await _apiService.fetchTags(userId: userId);
+    // Fusion sans doublon : tags API + tags perso
+    final merged = {...apiTags, ..._userTags}.toList();
+    return ['Tout', 'Favoris', ...merged];
+  }
+
+  /// Ajoute un tag personnalisé et le persiste
+  /// Retourne false si le tag existe déjà, true sinon
+  Future<bool> addTag(String tag) async {
+    final normalized = _normalize(tag);
+    if (_userTags.any((t) => _normalize(t) == normalized)) return false;
+    _userTags.add(tag);
+    await _storage.writeUserTags(_userTags);
+    return true;
+  }
+
+  /// Supprime un tag personnalisé
+  Future<void> removeTag(String tag) async {
+    _userTags.removeWhere((t) => _normalize(t) == _normalize(tag));
+    await _storage.writeUserTags(_userTags);
+  }
+
+  List<String> getCachedTags() => ['Tout', 'Favoris', ..._userTags];
+
+  String _normalize(String s) => s.trim().toLowerCase();
 }

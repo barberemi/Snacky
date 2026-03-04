@@ -27,15 +27,16 @@ class MockApiService {
     required String userId,
     required String tag,
   }) async {
-    // Base d'articles mockés
-    final allArticles = _getMockArticles();
-
-    // Filtrage par tag (insensible à la casse)
-    final filtered = allArticles
+    final all = _getMockArticles();
+    // Articles connus pour ce tag
+    final known = all
         .where((a) => a.tags.any((t) => t.toLowerCase() == tag.toLowerCase()))
         .toList();
-
-    return _simulateNetwork(filtered);
+    // Si aucun article connu → génère des faux articles pour ce tag
+    if (known.isEmpty) {
+      return _simulateNetwork(_generateMockArticlesForTag(tag));
+    }
+    return _simulateNetwork(known);
   }
 
   /// GET /articles?user_id=USER_ID
@@ -44,7 +45,8 @@ class MockApiService {
     return _simulateNetwork(_getMockArticles());
   }
 
-  /// Données mockées — à remplacer par les vrais appels API
+  // ─── Articles statiques existants ────────────────────────────────────────
+
   List<Article> _getMockArticles() {
     return [
       Article(
@@ -89,7 +91,7 @@ class MockApiService {
         source: 'Collector',
         time: '3h',
         description:
-            'Notre sélection des figurines Hot Toys les plus impressionnantes de l\'année.',
+            "Notre sélection des figurines Hot Toys les plus impressionnantes de l'année.",
         url: 'https://www.collector.com',
         image:
             'https://picperf.io/https://www.journaldugeek.com/app/uploads/2025/09/HP-1-2025-09-25T123515.174.jpeg',
@@ -113,7 +115,7 @@ class MockApiService {
         source: 'TechCrunch',
         time: '2h',
         description:
-            'Comment les outils d\'IA changent la façon dont les développeurs écrivent du code au quotidien.',
+            "Comment les outils d'IA changent la façon dont les développeurs écrivent du code au quotidien.",
         url: 'https://techcrunch.com',
         image: null,
         tags: ['IA'],
@@ -135,10 +137,52 @@ class MockApiService {
         source: 'Flutter.dev',
         time: '4h',
         description:
-            'Tour d\'horizon des nouvelles fonctionnalités de Flutter 4.0 et de Dart 4.',
+            "Tour d'horizon des nouvelles fonctionnalités de Flutter 4.0 et de Dart 4.",
         url: 'https://flutter.dev',
         image: null,
         tags: ['Flutter'],
+      ),
+    ];
+  }
+
+  // ─── Génération dynamique pour les nouveaux tags ─────────────────────────
+
+  /// Génère 3 faux articles pour un tag inconnu
+  List<Article> _generateMockArticlesForTag(String tag) {
+    final t = tag;
+    return [
+      Article(
+        id: '${t}_mock_1',
+        title: 'Toutes les nouveautés sur $t cette semaine',
+        source: 'MockNews',
+        time: '1h',
+        description:
+            'Un tour d\'horizon complet de ce qui s\'est passé cette semaine dans l\'univers de $t. Tendances, sorties et analyses.',
+        url: 'https://example.com/${t.toLowerCase()}-1',
+        image: null,
+        tags: [t],
+      ),
+      Article(
+        id: '${t}_mock_2',
+        title: '$t : ce que les experts en pensent',
+        source: 'MockBlog',
+        time: '3h',
+        description:
+            'Les spécialistes de $t partagent leurs points de vue sur les dernières évolutions du domaine.',
+        url: 'https://example.com/${t.toLowerCase()}-2',
+        image: null,
+        tags: [t],
+      ),
+      Article(
+        id: '${t}_mock_3',
+        title: 'Guide débutant : se lancer dans $t',
+        source: 'MockGuide',
+        time: '6h',
+        description:
+            'Tout ce qu\'il faut savoir pour débuter avec $t : ressources, communautés et premiers pas.',
+        url: 'https://example.com/${t.toLowerCase()}-3',
+        image: null,
+        tags: [t],
       ),
     ];
   }

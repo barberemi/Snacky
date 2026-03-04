@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from duckduckgo_search import DDGS
 from openai import OpenAI
 import json
+import uuid
+from datetime import datetime, timezone
 
 app = FastAPI()
 
@@ -9,43 +11,70 @@ app = FastAPI()
 client = OpenAI(api_key="TON_API_KEY")
 
 @app.get("/news")
-def get_smart_news(topic: str):
+def get_smart_news(topic: str, user_id: str):
     # 1. Recherche sur DuckDuckGo
     results = []
     with DDGS() as ddgs:
-        # On récupère les 8 derniers résultats d'actualité
-        for r in ddgs.news(topic, max_results=8):
+        for r in ddgs.news(topic, max_results=10):
             results.append({
-                "title": r['title'],
-                "body": r['body'],
-                "url": r['url']
+                "title": r.get("title", ""),
+                "body": r.get("body", ""),
+                "url": r.get("url", ""),
+                "source": r.get("source", ""),
+                "image": r.get("image", None),
+                "date": r.get("date", ""),
             })
 
-    # 2. Préparation du Prompt pour l'IA
+    fetched_at = datetime.now(timezone.utc).isoformat()
+
+    # 2. Prompt amélioré
     prompt = f"""
-    Tu es un curateur expert. Analyse ces news sur '{topic}' et organise-les.
-    Regroupe les doublons et crée un JSON structuré.
-    
-    Format attendu :
+Tu es un curateur de veille technologique et culturelle expert.
+On te donne une liste de résultats bruts issus d'une recherche sur le sujet : "{topic}".
+
+Ta mission :
+1. Analyse et dédoublonne les résultats (si deux articles parlent du même événement, garde le plus complet).
+2. Pour chaque article retenu, synthétise les informations en français.
+3. Retourne un JSON valide avec UNIQUEMENT le tableau "articles".
+
+Contraintes strictes :
+- "id" : un identifiant unique sous la forme "{topic.lower().replace(" ", "_")}_<numéro>" (ex: "batman_1")
+- "title" : titre clair et synthétique en français (max 80 caractères)
+- "source" : nom du site source (ex: "Le Monde", "TechCrunch"), extrait de l'URL si absent
+- "time" : temps écoulé depuis la publication en français (ex: "2h", "1j", "3j") — déduis-le depuis le champ "date"
+- "description" : résumé neutre et informatif en 2-3 phrases en français
+- "url" : URL originale de l'article, non modifiée
+- "image" : URL de l'image si disponible, sinon null
+- "tags" : liste de tags pertinents parmi ceux fournis (inclure "{topic}" obligatoirement)
+- "fetchedAt" : utilise exactement cette valeur ISO 8601 : "{fetched_at}"
+
+Format de sortie attendu (JSON strict, aucun texte en dehors) :
+{{
+  "articles": [
     {{
-      "news": [
-        {{
-          "title": "Titre synthétique",
-          "summary": "Résumé en 2 phrases",
-          "category": "Cinéma|Comics|Jeux Vidéo|Autre",
-          "url": "Lien source"
-        }}
-      ]
+      "id": "string",
+      "title": "string",
+      "source": "string",
+      "time": "string",
+      "description": "string",
+      "url": "string",
+      "image": "string ou null",
+      "tags": ["string"],
+      "fetchedAt": "string"
     }}
+  ]
+}}
 
-    Données brutes : {json.dumps(results)}
-    """
+Données brutes à analyser :
+{json.dumps(results, ensure_ascii=False, indent=2)}
+"""
 
-    # 3. Appel à l'IA pour le tri
+    # 3. Appel à l'IA
     response = client.chat.completions.create(
-        model="gpt-4o-mini", # Modèle rapide et peu coûteux
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
-        response_format={ "type": "json_object" }
+        response_format={"type": "json_object"},
+        temperature=0.3,  # Moins créatif, plus factuel
     )
 
     return json.loads(response.choices[0].message.content)
