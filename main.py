@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from duckduckgo_search import DDGS
 from openai import OpenAI
 import json
+import os
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -9,8 +10,8 @@ app = FastAPI()
 
 client = OpenAI(api_key="TON_API_KEY")
 
-# ─── Liste statique de fiabilité des sources ─────────────────────────────────
-# Score de base : HIGH (source reconnue), MEDIUM (blog/communauté), LOW (inconnu)
+# ─── Liste statique de fiabilité des sources (priorité maximale) ─────────────
+# Ces entrées écrasent toujours la base sources_db.json
 TRUSTED_SOURCES = {
     # Presse tech internationale
     "techcrunch.com": "high", "theverge.com": "high", "wired.com": "high",
@@ -27,13 +28,56 @@ TRUSTED_SOURCES = {
     # Jeux / Culture
     "gamekult.com": "high", "jeuxvideo.com": "high", "ign.com": "high",
     "allocine.fr": "medium", "dccomics.com": "high", "marvel.com": "high",
+    # Presse généraliste internationale
+    "euronews.com": "high", "bbc.com": "high", "bbc.co.uk": "high",
+    "reuters.com": "high", "apnews.com": "high", "afp.com": "high",
+    "theguardian.com": "high", "nytimes.com": "high", "ft.com": "high",
 }
 
-def get_domain_score(url: str) -> str:
-    """Retourne le score de base selon le domaine de l'URL."""
+# ─── Chargement de la base étendue (sources_db.json) ─────────────────────────
+# Générée par build_sources_db.py (fusion MBFC + OpenSources + statiques).
+# Les sources statiques ci-dessus ont la priorité et écrasent la base.
+_SOURCES_DB_PATH = os.path.join(os.path.dirname(__file__), "sources_db.json")
+_sources_db: dict[str, str] = {}
+
+def _load_sources_db() -> None:
+    """Charge sources_db.json dans _sources_db au démarrage du serveur."""
+    global _sources_db
+    if not os.path.exists(_SOURCES_DB_PATH):
+        print(
+            "ℹ️  sources_db.json introuvable — seules les sources statiques seront utilisées.\n"
+            "   Lancez `python build_sources_db.py` pour générer la base enrichie."
+        )
+        _sources_db = dict(TRUSTED_SOURCES)
+        return
+
     try:
-        domain = urlparse(url).netloc.replace("www.", "")
-        return TRUSTED_SOURCES.get(domain, "unknown")
+        with open(_SOURCES_DB_PATH, "r", encoding="utf-8") as f:
+            loaded: dict[str, str] = json.load(f)
+        # Les statiques écrasent la base (priorité maximale)
+        _sources_db = {**loaded, **TRUSTED_SOURCES}
+        counts = {lvl: sum(1 for v in _sources_db.values() if v == lvl) for lvl in ("high", "medium", "low")}
+        print(
+            f"✅ sources_db.json chargé : {len(_sources_db)} sources "
+            f"(🟢 {counts['high']} high / 🟠 {counts['medium']} medium / 🔴 {counts['low']} low)"
+        )
+    except Exception as e:
+        print(f"⚠️  Erreur lors du chargement de sources_db.json : {e} — fallback sur sources statiques")
+        _sources_db = dict(TRUSTED_SOURCES)
+
+# Chargement immédiat au démarrage du module
+_load_sources_db()
+
+
+def get_domain_score(url: str) -> str:
+    """Retourne le score de fiabilité du domaine (high/medium/low/unknown).
+
+    Cherche d'abord dans la base enrichie (_sources_db), puis retourne
+    "unknown" si le domaine n'est pas répertorié.
+    """
+    try:
+        domain = urlparse(url).netloc.lower().replace("www.", "").strip("/")
+        return _sources_db.get(domain, "unknown")
     except Exception:
         return "unknown"
 
