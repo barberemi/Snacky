@@ -5,7 +5,14 @@ import 'package:shimmer/shimmer.dart';
 
 class NewsCard extends StatefulWidget {
   final Article article;
-  const NewsCard({super.key, required this.article});
+  final bool isFavorite; // Ajouté
+  final VoidCallback onFavoriteToggle; // Ajouté
+  const NewsCard({
+    super.key,
+    required this.article,
+    required this.isFavorite,
+    required this.onFavoriteToggle,
+  });
 
   @override
   State<NewsCard> createState() => _NewsCardState();
@@ -56,7 +63,6 @@ class _NewsCardState extends State<NewsCard> {
           padding: const EdgeInsets.all(12.0),
           child: Column(
             children: [
-              // Dans le Row de ta NewsCard
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -91,7 +97,7 @@ class _NewsCardState extends State<NewsCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.article.title!,
+                          widget.article.title, // Correction finale
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -106,6 +112,14 @@ class _NewsCardState extends State<NewsCard> {
                         ),
                       ],
                     ),
+                  ),
+                  // Icône Favoris
+                  IconButton(
+                    icon: Icon(
+                      widget.isFavorite ? Icons.star : Icons.star_border,
+                      color: widget.isFavorite ? Colors.amber : Colors.grey,
+                    ),
+                    onPressed: widget.onFavoriteToggle,
                   ),
                   Icon(
                     _isExpanded
@@ -126,7 +140,7 @@ class _NewsCardState extends State<NewsCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Divider(),
-                      Text(widget.article.description ?? ""),
+                      Text(widget.article.description), // Correction finale
                       const SizedBox(height: 10),
 
                       // LE BOUTON CLIQUABLE

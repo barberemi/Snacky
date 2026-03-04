@@ -5,11 +5,32 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Flutter Linux (Desktop)",
+            "request": "launch",
+            "type": "dart",
+            "args": ["-d", "linux"]
+        },
+        {
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",
             "url": "http://localhost:8080",
             "webRoot": "${workspaceFolder}"
+        },
+        {
+            "name": "Flutter Android (Debug)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "debug",
+            // Force le lancement sur Android si plusieurs supports sont actifs
+            "args": ["-d", "emulator-5554"] 
+        },
+        {
+            "name": "Flutter Android (Release)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+            "args": ["-d", "emulator-5554"]
         }
     ]
 }

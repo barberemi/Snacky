@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:snacky/models/article.dart';
+import 'package:snacky/repositories/article_repository.dart';
+import 'package:snacky/repositories/tag_repository.dart';
+import 'package:snacky/repositories/favorite_repository.dart';
 import '../widgets/tag_selector.dart';
 import '../widgets/news_card.dart';
 
@@ -12,77 +15,85 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
+
+  // --- REPOSITORIES ---
+  final ArticleRepository _articleRepo = ArticleRepository();
+  final TagRepository _tagRepo = TagRepository();
+  final FavoriteRepository _favoriteRepo = FavoriteRepository();
+
+  // --- ÉTAT ---
   String _selectedTag = "Tout";
+  List<String> _tags = ["Tout", "Favoris"];
+  List<Article> _articles = [];
+  bool _isLoading = true;
 
-  final List<String> _tags = [
-    "Tout",
-    "PHP",
-    "Batman",
-    "Flutter",
-    "IA",
-    "Figurines",
-  ];
+  // Identifiant utilisateur simulé (sera remplacé par un vrai auth plus tard)
+  final String _userId = 'user_1';
 
-  final List<Article> _allNews = [
-    Article(
-      title: "PHP 8.4 : Les nouveautés arrivent",
-      source: "PHP.net",
-      time: "2h",
-      description:
-          "Cette version apporte les 'Property Hooks' et une meilleure gestion de la mémoire pour les applications haute performance.",
-      url: "https://www.php.net",
-      image:
-          "https://picperf.io/https://laravelnews.s3.amazonaws.com/featured-images/php-8.5-coming-soon-featured.jpg",
-    ),
-    Article(
-      title: "Batman: Arkham Shadow annoncé !",
-      source: "DC Comics",
-      time: "5h",
-      description:
-          "Le Chevalier Noir revient dans une aventure inédite en VR. Préparez-vous à explorer Gotham comme jamais auparavant.",
-      url: "https://www.php.net",
-      image:
-          "https://picperf.io/https://cdn.gamekult.com/optim/images/news/30/3050866091/12-ans-apres-batman-arkham-origins-est-toujours-le-meilleur-episode-de-la-franchise-86354726__930_300__0-69-1920-688.jpg",
-    ),
-    Article(
-      title: "Apprendre Flutter en 2026",
-      source: "Medium",
-      time: "1j",
-      description: "Lorem ipsum ipsum nobel bla",
-      url: "https://www.php.net",
-      image:
-          "https://picperf.io/https://cdn.zonebourse.com/static/resize/768/432//images/reuters/2025-08/2025-08-07T202136Z_1_LYNXMPEL76145_RTROPTP_4_FLUTTER-RESULTS.JPG",
-    ),
-    Article(
-      title: "Les meilleures figurines Hot Toys",
-      source: "Collector",
-      time: "3h",
-      description: "Lorem ipsum ipsum nobel bla.",
-      url: "https://www.php.net",
-      image:
-          "https://picperf.io/https://www.journaldugeek.com/app/uploads/2025/09/HP-1-2025-09-25T123515.174.jpeg",
-    ),
-    Article(
-      title: "Laravel vs Symfony en 2026",
-      source: "Dev.to",
-      time: "6h",
-      description: "Lorem ipsum ipsum nobel bla",
-      url: "https://www.php.net",
-      image:
-          "https://picperf.io/https://www.presse-citron.net/app/uploads/2024/06/Meilleur-hebergement-web-Laravel-880x587.jpg",
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+  }
+
+  /// Chargement initial : tags + tous les articles
+  Future<void> _loadInitialData() async {
+    setState(() => _isLoading = true);
+
+    // Charge tags et articles en parallèle
+    final results = await Future.wait([
+      _tagRepo.getTags(userId: _userId),
+      _articleRepo.getAllArticles(userId: _userId),
+    ]);
+
+    setState(() {
+      _tags = results[0] as List<String>;
+      _articles = results[1] as List<Article>;
+      _isLoading = false;
+    });
+  }
+
+  /// Appelé quand l'utilisateur change de tag
+  Future<void> _onTagChanged(String tag) async {
+    setState(() {
+      _selectedTag = tag;
+    });
+
+    // Pour "Tout" et "Favoris", pas besoin de fetch l'API
+    if (tag == "Tout" || tag == "Favoris") return;
+
+    // Sinon, on charge les articles de ce tag depuis l'API
+    setState(() => _isLoading = true);
+    final articles = await _articleRepo.getArticlesByTag(
+      userId: _userId,
+      tag: tag,
+    );
+    setState(() {
+      _articles = articles;
+      _isLoading = false;
+    });
+  }
+
+  void _toggleFavorite(Article article) {
+    setState(() {
+      _favoriteRepo.toggleFavorite(article);
+    });
+  }
 
   void _onSearch() => print("Recherche pour : ${_searchController.text}");
 
   @override
   Widget build(BuildContext context) {
     // --- LOGIQUE DE FILTRAGE ---
-    // On filtre la liste ici : si "Tout" on prend tout, sinon on cherche le tag dans le titre
-    final filteredNews = _allNews.where((article) {
-      if (_selectedTag == "Tout") return true;
-      return article.title!.toLowerCase().contains(_selectedTag.toLowerCase());
-    }).toList();
+    List<Article> filteredNews;
+    if (_selectedTag == "Favoris") {
+      filteredNews = _favoriteRepo.getFavorites();
+    } else if (_selectedTag == "Tout") {
+      // En mode "Tout", on recharge tous les articles en cache
+      filteredNews = _articleRepo.getCachedArticles();
+    } else {
+      filteredNews = _articles;
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -98,7 +109,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 style: TextStyle(
                   fontSize: 40,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF3F51B5), // Votre couleur fétiche
+                  color: Color(0xFF3F51B5),
                 ),
               ),
               const SizedBox(height: 30),
@@ -115,13 +126,7 @@ class _SearchScreenState extends State<SearchScreen> {
               TagSelector(
                 tags: _tags,
                 selectedTag: _selectedTag,
-                onTagSelected: (tag) {
-                  setState(() {
-                    _selectedTag = tag;
-                    // On ne met pas forcément à jour le contrôleur de recherche
-                    // si on veut que la barre reste libre
-                  });
-                },
+                onTagSelected: _onTagChanged,
               ),
 
               const SizedBox(height: 30),
@@ -138,25 +143,29 @@ class _SearchScreenState extends State<SearchScreen> {
 
               // Liste filtrée
               Expanded(
-                child: filteredNews.isEmpty
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF3F51B5),
+                        ),
+                      )
+                    : filteredNews.isEmpty
                     ? const Center(
                         child: Text("Aucun snack trouvé pour ce thème 🍪"),
                       )
                     : AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         child: ListView.builder(
-                          // <--- PLUS D'EXPANDED ICI
-                          key: ValueKey(
-                            _selectedTag,
-                          ), // Recrée toute la liste lors d'un changement de tag
+                          key: ValueKey(_selectedTag),
                           itemCount: filteredNews.length,
                           padding: const EdgeInsets.only(bottom: 20),
                           itemBuilder: (context, index) {
                             final article = filteredNews[index];
                             return NewsCard(
-                              // La Key force Flutter à remettre l'état à zéro si la news change
-                              key: ValueKey(article.title),
+                              key: ValueKey(article.id),
                               article: article,
+                              isFavorite: _favoriteRepo.isFavorite(article),
+                              onFavoriteToggle: () => _toggleFavorite(article),
                             );
                           },
                         ),
@@ -169,7 +178,6 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // Petites méthodes privées pour garder le build() propre
   Widget _buildSearchField() {
     return TextField(
       controller: _searchController,

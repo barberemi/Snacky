@@ -14,39 +14,89 @@ class TagSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 50,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: tags.length,
-        itemBuilder: (context, index) {
-          final tag = tags[index];
-          final isSelected = selectedTag == tag;
+    // Séparation des tags principaux et secondaires
+    final mainTags = tags.where((t) => t == "Tout" || t == "Favoris").toList();
+    final otherTags = tags.where((t) => t != "Tout" && t != "Favoris").toList();
 
-          return Padding(
-            padding: const EdgeInsets.only(right: 10.0),
-            child: FilterChip(
-              label: Text(tag),
-              selected: isSelected,
-              onSelected: (_) => onTagSelected(tag),
-              selectedColor: const Color(0xFF3F51B5).withOpacity(0.2),
-              checkmarkColor: const Color(0xFF3F51B5),
-              labelStyle: TextStyle(
-                color: isSelected ? const Color(0xFF3F51B5) : Colors.black87,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: isSelected
-                      ? const Color(0xFF3F51B5)
-                      : Colors.grey.shade300,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 50,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: mainTags.length,
+            itemBuilder: (context, index) {
+              final tag = mainTags[index];
+              final isSelected = selectedTag == tag;
+              return Padding(
+                padding: const EdgeInsets.only(right: 10.0),
+                child: FilterChip(
+                  label: Text(tag),
+                  selected: isSelected,
+                  onSelected: (_) => onTagSelected(tag),
+                  selectedColor: const Color(0xFF3F51B5).withOpacity(0.2),
+                  checkmarkColor: const Color(0xFF3F51B5),
+                  labelStyle: TextStyle(
+                    color: isSelected
+                        ? const Color(0xFF3F51B5)
+                        : Colors.black87,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(
+                      color: isSelected
+                          ? const Color(0xFF3F51B5)
+                          : Colors.grey.shade300,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 50,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: otherTags.length,
+            itemBuilder: (context, index) {
+              final tag = otherTags[index];
+              final isSelected = selectedTag == tag;
+              return Padding(
+                padding: const EdgeInsets.only(right: 10.0),
+                child: FilterChip(
+                  label: Text(tag),
+                  selected: isSelected,
+                  onSelected: (_) => onTagSelected(tag),
+                  selectedColor: const Color(0xFF3F51B5).withOpacity(0.2),
+                  checkmarkColor: const Color(0xFF3F51B5),
+                  labelStyle: TextStyle(
+                    color: isSelected
+                        ? const Color(0xFF3F51B5)
+                        : Colors.black87,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(
+                      color: isSelected
+                          ? const Color(0xFF3F51B5)
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
