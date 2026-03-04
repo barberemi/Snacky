@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:snacky/models/article.dart';
+import 'package:snacky/models/confidence_level.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -110,6 +111,8 @@ class _NewsCardState extends State<NewsCard> {
                             fontSize: 13,
                           ),
                         ),
+                        const SizedBox(height: 4),
+                        _ConfidenceBadge(confidence: widget.article.confidence),
                       ],
                     ),
                   ),
@@ -140,7 +143,31 @@ class _NewsCardState extends State<NewsCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Divider(),
-                      Text(widget.article.description), // Correction finale
+                      Text(widget.article.description),
+                      const SizedBox(height: 8),
+                      // Raison du score de confiance
+                      if (widget.article.confidenceReason != null)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              widget.article.confidence.icon,
+                              size: 14,
+                              color: widget.article.confidence.color,
+                            ),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                widget.article.confidenceReason!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: widget.article.confidence.color,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       const SizedBox(height: 10),
 
                       // LE BOUTON CLIQUABLE
@@ -163,6 +190,39 @@ class _NewsCardState extends State<NewsCard> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Badge coloré affichant le niveau de confiance d'un article
+class _ConfidenceBadge extends StatelessWidget {
+  final ConfidenceLevel confidence;
+  const _ConfidenceBadge({required this.confidence});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: confidence.backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: confidence.color.withOpacity(0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(confidence.icon, size: 11, color: confidence.color),
+          const SizedBox(width: 4),
+          Text(
+            confidence.label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: confidence.color,
+            ),
+          ),
+        ],
       ),
     );
   }

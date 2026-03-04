@@ -1,19 +1,14 @@
 import '../models/article.dart';
+import '../models/confidence_level.dart';
 
 /// Service qui simule les appels à l'API Rust.
-/// Quand l'API sera prête, il suffira de remplacer ce fichier
-/// par un vrai client HTTP (dio, http, etc.).
 class MockApiService {
-  /// Simule un délai réseau
   Future<T> _simulateNetwork<T>(T data) async {
     await Future.delayed(const Duration(milliseconds: 600));
     return data;
   }
 
-  /// GET /tags?user_id=USER_ID
-  /// Retourne les tags de l'utilisateur
   Future<List<String>> fetchTags({required String userId}) async {
-    // Données mockées par utilisateur
     final mockTags = {
       'user_1': ['PHP', 'Batman', 'Flutter', 'IA', 'Figurines'],
       'user_2': ['Python', 'Marvel', 'React'],
@@ -21,31 +16,23 @@ class MockApiService {
     return _simulateNetwork(mockTags[userId] ?? ['Flutter', 'IA']);
   }
 
-  /// GET /articles?user_id=USER_ID&tag=TAG
-  /// Retourne les articles pour un tag donné
   Future<List<Article>> fetchArticlesByTag({
     required String userId,
     required String tag,
   }) async {
     final all = _getMockArticles();
-    // Articles connus pour ce tag
     final known = all
         .where((a) => a.tags.any((t) => t.toLowerCase() == tag.toLowerCase()))
         .toList();
-    // Si aucun article connu → génère des faux articles pour ce tag
     if (known.isEmpty) {
       return _simulateNetwork(_generateMockArticlesForTag(tag));
     }
     return _simulateNetwork(known);
   }
 
-  /// GET /articles?user_id=USER_ID
-  /// Retourne tous les articles de l'utilisateur
   Future<List<Article>> fetchAllArticles({required String userId}) async {
     return _simulateNetwork(_getMockArticles());
   }
-
-  // ─── Articles statiques existants ────────────────────────────────────────
 
   List<Article> _getMockArticles() {
     return [
@@ -60,6 +47,8 @@ class MockApiService {
         image:
             'https://picperf.io/https://laravelnews.s3.amazonaws.com/featured-images/php-8.5-coming-soon-featured.jpg',
         tags: ['PHP'],
+        confidence: ConfidenceLevel.high,
+        confidenceReason: 'Source officielle PHP, recoupé par 4 médias tech',
       ),
       Article(
         id: '2',
@@ -72,6 +61,8 @@ class MockApiService {
         image:
             'https://picperf.io/https://cdn.gamekult.com/optim/images/news/30/3050866091/12-ans-apres-batman-arkham-origins-est-toujours-le-meilleur-episode-de-la-franchise-86354726__930_300__0-69-1920-688.jpg',
         tags: ['Batman'],
+        confidence: ConfidenceLevel.high,
+        confidenceReason: 'Annonce officielle DC Comics',
       ),
       Article(
         id: '3',
@@ -84,6 +75,8 @@ class MockApiService {
         image:
             'https://picperf.io/https://cdn.zonebourse.com/static/resize/768/432//images/reuters/2025-08/2025-08-07T202136Z_1_LYNXMPEL76145_RTROPTP_4_FLUTTER-RESULTS.JPG',
         tags: ['Flutter'],
+        confidence: ConfidenceLevel.medium,
+        confidenceReason: 'Article de blog, auteur non vérifié',
       ),
       Article(
         id: '4',
@@ -96,6 +89,8 @@ class MockApiService {
         image:
             'https://picperf.io/https://www.journaldugeek.com/app/uploads/2025/09/HP-1-2025-09-25T123515.174.jpeg',
         tags: ['Figurines'],
+        confidence: ConfidenceLevel.medium,
+        confidenceReason: 'Site spécialisé, contenu subjectif',
       ),
       Article(
         id: '5',
@@ -108,6 +103,8 @@ class MockApiService {
         image:
             'https://picperf.io/https://www.presse-citron.net/app/uploads/2024/06/Meilleur-hebergement-web-Laravel-880x587.jpg',
         tags: ['PHP'],
+        confidence: ConfidenceLevel.medium,
+        confidenceReason: "Communauté dev.to, opinion d'auteur",
       ),
       Article(
         id: '6',
@@ -119,6 +116,8 @@ class MockApiService {
         url: 'https://techcrunch.com',
         image: null,
         tags: ['IA'],
+        confidence: ConfidenceLevel.high,
+        confidenceReason: 'TechCrunch, recoupé par 6 sources',
       ),
       Article(
         id: '7',
@@ -130,6 +129,8 @@ class MockApiService {
         url: 'https://www.allocine.fr',
         image: null,
         tags: ['Batman'],
+        confidence: ConfidenceLevel.low,
+        confidenceReason: 'Source unique, non confirmé officiellement',
       ),
       Article(
         id: '8',
@@ -141,48 +142,52 @@ class MockApiService {
         url: 'https://flutter.dev',
         image: null,
         tags: ['Flutter'],
+        confidence: ConfidenceLevel.high,
+        confidenceReason: 'Source officielle Flutter',
       ),
     ];
   }
 
-  // ─── Génération dynamique pour les nouveaux tags ─────────────────────────
-
-  /// Génère 3 faux articles pour un tag inconnu
   List<Article> _generateMockArticlesForTag(String tag) {
-    final t = tag;
     return [
       Article(
-        id: '${t}_mock_1',
-        title: 'Toutes les nouveautés sur $t cette semaine',
+        id: '${tag}_mock_1',
+        title: 'Toutes les nouveautés sur $tag cette semaine',
         source: 'MockNews',
         time: '1h',
         description:
-            'Un tour d\'horizon complet de ce qui s\'est passé cette semaine dans l\'univers de $t. Tendances, sorties et analyses.',
-        url: 'https://example.com/${t.toLowerCase()}-1',
+            "Un tour d'horizon complet de ce qui s'est passé cette semaine dans l'univers de $tag.",
+        url: 'https://example.com/${tag.toLowerCase()}-1',
         image: null,
-        tags: [t],
+        tags: [tag],
+        confidence: ConfidenceLevel.unknown,
+        confidenceReason: 'Source mock, données non vérifiées',
       ),
       Article(
-        id: '${t}_mock_2',
-        title: '$t : ce que les experts en pensent',
+        id: '${tag}_mock_2',
+        title: '$tag : ce que les experts en pensent',
         source: 'MockBlog',
         time: '3h',
         description:
-            'Les spécialistes de $t partagent leurs points de vue sur les dernières évolutions du domaine.',
-        url: 'https://example.com/${t.toLowerCase()}-2',
+            "Les spécialistes de $tag partagent leurs points de vue sur les dernières évolutions du domaine.",
+        url: 'https://example.com/${tag.toLowerCase()}-2',
         image: null,
-        tags: [t],
+        tags: [tag],
+        confidence: ConfidenceLevel.unknown,
+        confidenceReason: 'Source mock, données non vérifiées',
       ),
       Article(
-        id: '${t}_mock_3',
-        title: 'Guide débutant : se lancer dans $t',
+        id: '${tag}_mock_3',
+        title: 'Guide débutant : se lancer dans $tag',
         source: 'MockGuide',
         time: '6h',
         description:
-            'Tout ce qu\'il faut savoir pour débuter avec $t : ressources, communautés et premiers pas.',
-        url: 'https://example.com/${t.toLowerCase()}-3',
+            "Tout ce qu'il faut savoir pour débuter avec $tag : ressources, communautés et premiers pas.",
+        url: 'https://example.com/${tag.toLowerCase()}-3',
         image: null,
-        tags: [t],
+        tags: [tag],
+        confidence: ConfidenceLevel.unknown,
+        confidenceReason: 'Source mock, données non vérifiées',
       ),
     ];
   }
