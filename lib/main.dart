@@ -1,11 +1,29 @@
 import 'package:flutter/material.dart';
-// Importe ton fichier de recherche ici !
+import 'package:snacky/services/local_storage_service.dart';
+import 'package:snacky/repositories/article_repository.dart';
+import 'package:snacky/repositories/favorite_repository.dart';
 import 'package:snacky/screens/search_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialisation du stockage persistant
+  final storage = await LocalStorageService.init();
+  final articleRepo = ArticleRepository(storage);
+  final favoriteRepo = FavoriteRepository(storage);
+
+  // Charger les favoris persistés avant le démarrage de l'UI
+  await favoriteRepo.init();
+
   runApp(
-    const MaterialApp(
-      home: SearchScreen(), // C'est ici que tu dis à l'app de lancer TON écran
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Snacky',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF3F51B5)),
+      ),
+      home: SearchScreen(articleRepo: articleRepo, favoriteRepo: favoriteRepo),
     ),
   );
 }

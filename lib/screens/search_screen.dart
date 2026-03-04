@@ -7,7 +7,14 @@ import '../widgets/tag_selector.dart';
 import '../widgets/news_card.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  final ArticleRepository articleRepo;
+  final FavoriteRepository favoriteRepo;
+
+  const SearchScreen({
+    super.key,
+    required this.articleRepo,
+    required this.favoriteRepo,
+  });
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -16,10 +23,8 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
 
-  // --- REPOSITORIES ---
-  final ArticleRepository _articleRepo = ArticleRepository();
+  // TagRepository n'a pas besoin d'être injecté (pas de persistance locale)
   final TagRepository _tagRepo = TagRepository();
-  final FavoriteRepository _favoriteRepo = FavoriteRepository();
 
   // --- ÉTAT ---
   String _selectedTag = "Tout";
@@ -36,14 +41,13 @@ class _SearchScreenState extends State<SearchScreen> {
     _loadInitialData();
   }
 
-  /// Chargement initial : tags + tous les articles
+  /// Chargement initial : tags + tous les articles (cache ou API)
   Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
 
-    // Charge tags et articles en parallèle
     final results = await Future.wait([
       _tagRepo.getTags(userId: _userId),
-      _articleRepo.getAllArticles(userId: _userId),
+      widget.articleRepo.getAllArticles(userId: _userId),
     ]);
 
     setState(() {
@@ -55,16 +59,12 @@ class _SearchScreenState extends State<SearchScreen> {
 
   /// Appelé quand l'utilisateur change de tag
   Future<void> _onTagChanged(String tag) async {
-    setState(() {
-      _selectedTag = tag;
-    });
+    setState(() => _selectedTag = tag);
 
-    // Pour "Tout" et "Favoris", pas besoin de fetch l'API
     if (tag == "Tout" || tag == "Favoris") return;
 
-    // Sinon, on charge les articles de ce tag depuis l'API
     setState(() => _isLoading = true);
-    final articles = await _articleRepo.getArticlesByTag(
+    final articles = await widget.articleRepo.getArticlesByTag(
       userId: _userId,
       tag: tag,
     );
@@ -74,10 +74,9 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  void _toggleFavorite(Article article) {
-    setState(() {
-      _favoriteRepo.toggleFavorite(article);
-    });
+  Future<void> _toggleFavorite(Article article) async {
+    await widget.favoriteRepo.toggleFavorite(article);
+    setState(() {}); // Rafraîchit l'UI après persistance
   }
 
   void _onSearch() => print("Recherche pour : ${_searchController.text}");
@@ -87,10 +86,10 @@ class _SearchScreenState extends State<SearchScreen> {
     // --- LOGIQUE DE FILTRAGE ---
     List<Article> filteredNews;
     if (_selectedTag == "Favoris") {
-      filteredNews = _favoriteRepo.getFavorites();
+      filteredNews = widget.favoriteRepo.getFavorites();
     } else if (_selectedTag == "Tout") {
       // En mode "Tout", on recharge tous les articles en cache
-      filteredNews = _articleRepo.getCachedArticles();
+      filteredNews = widget.articleRepo.getCachedArticles();
     } else {
       filteredNews = _articles;
     }
@@ -164,7 +163,9 @@ class _SearchScreenState extends State<SearchScreen> {
                             return NewsCard(
                               key: ValueKey(article.id),
                               article: article,
-                              isFavorite: _favoriteRepo.isFavorite(article),
+                              isFavorite: widget.favoriteRepo.isFavorite(
+                                article,
+                              ),
                               onFavoriteToggle: () => _toggleFavorite(article),
                             );
                           },

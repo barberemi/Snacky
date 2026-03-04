@@ -1,14 +1,14 @@
 import '../services/mock_api_service.dart';
 
 /// Repository qui gère les tags de l'utilisateur.
-/// Plus tard, les tags seront aussi stockés dans Isar.
+/// Les tags sont toujours rechargés depuis l'API à chaque démarrage
+/// (légers, pas besoin de cache journalier).
 class TagRepository {
   final MockApiService _apiService;
 
   TagRepository({MockApiService? apiService})
     : _apiService = apiService ?? MockApiService();
 
-  /// Cache local en mémoire
   List<String> _cachedTags = [];
 
   /// Récupère les tags de l'utilisateur depuis l'API.
@@ -19,7 +19,6 @@ class TagRepository {
     return _cachedTags;
   }
 
-  /// Retourne le cache local
   List<String> getCachedTags() =>
       _cachedTags.isEmpty ? ['Tout', 'Favoris'] : _cachedTags;
 }

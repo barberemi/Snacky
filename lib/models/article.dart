@@ -8,6 +8,9 @@ class Article {
   final String? image;
   final List<String> tags;
 
+  /// Date à laquelle l'article a été récupéré depuis l'API
+  final DateTime fetchedAt;
+
   Article({
     required this.id,
     required this.title,
@@ -17,7 +20,16 @@ class Article {
     required this.url,
     this.image,
     this.tags = const [],
-  });
+    DateTime? fetchedAt,
+  }) : fetchedAt = fetchedAt ?? DateTime.now();
+
+  /// Retourne true si l'article date d'un jour précédent (périmé)
+  bool get isExpired {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final articleDay = DateTime(fetchedAt.year, fetchedAt.month, fetchedAt.day);
+    return articleDay.isBefore(today);
+  }
 
   factory Article.fromJson(Map<String, dynamic> json) {
     return Article(
@@ -31,6 +43,9 @@ class Article {
       tags:
           (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
           [],
+      fetchedAt: json['fetchedAt'] != null
+          ? DateTime.parse(json['fetchedAt'] as String)
+          : DateTime.now(),
     );
   }
 
@@ -44,6 +59,7 @@ class Article {
       'url': url,
       'image': image,
       'tags': tags,
+      'fetchedAt': fetchedAt.toIso8601String(),
     };
   }
 
