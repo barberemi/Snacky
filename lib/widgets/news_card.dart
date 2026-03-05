@@ -177,18 +177,7 @@ class _NewsCardState extends State<NewsCard> {
                       const SizedBox(height: 10),
 
                       // LE BOUTON CLIQUABLE
-                      GestureDetector(
-                        onTap: _launchURL, // Appelle la fonction d'ouverture
-                        child: const Text(
-                          "Voir l'article",
-                          style: TextStyle(
-                            color: Color(0xFF3F51B5), // Ton bleu
-                            fontWeight: FontWeight.bold,
-                            decoration: TextDecoration
-                                .underline, // Un petit souligné pour le côté lien
-                          ),
-                        ),
-                      ),
+                      _ArticleLink(onTap: _launchURL),
                     ],
                   ),
                 ),
@@ -263,4 +252,40 @@ Widget _buildShimmerPlaceholder() {
       ),
     ),
   );
+}
+
+/// Lien "Voir l'article" avec underline au survol.
+class _ArticleLink extends StatefulWidget {
+  final VoidCallback onTap;
+  const _ArticleLink({required this.onTap});
+
+  @override
+  State<_ArticleLink> createState() => _ArticleLinkState();
+}
+
+class _ArticleLinkState extends State<_ArticleLink> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Text(
+          "Voir l'article",
+          style: TextStyle(
+            color: const Color(0xFF3F51B5),
+            fontWeight: FontWeight.bold,
+            decoration: _hovered
+                ? TextDecoration.underline
+                : TextDecoration.none,
+            decorationColor: const Color(0xFF3F51B5),
+          ),
+        ),
+      ),
+    );
+  }
 }

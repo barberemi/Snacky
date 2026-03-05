@@ -1,27 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:snacky/repositories/auth_repository.dart';
 import 'package:snacky/services/local_storage_service.dart';
 import 'package:snacky/repositories/article_repository.dart';
 import 'package:snacky/repositories/favorite_repository.dart';
 import 'package:snacky/repositories/tag_repository.dart';
 import 'package:snacky/screens/search_screen.dart';
+import 'package:snacky/services/mock_auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialisation du stockage persistant
   final storage = await LocalStorageService.init();
   final articleRepo = ArticleRepository(storage);
   final favoriteRepo = FavoriteRepository(storage);
   final tagRepo = TagRepository(storage);
 
-  // Charger les favoris et les tags persistés avant le démarrage de l'UI
-  await Future.wait([favoriteRepo.init(), tagRepo.init()]);
+  // Auth : swap MockAuthService → ApiAuthService quand l'API sera prête
+  final authRepo = AuthRepository(service: MockAuthService(), storage: storage);
+
+  await Future.wait([
+    favoriteRepo.init(),
+    tagRepo.init(),
+    authRepo.init(), // Restaure la session persistée
+  ]);
 
   runApp(
     SnackyApp(
       articleRepo: articleRepo,
       favoriteRepo: favoriteRepo,
       tagRepo: tagRepo,
+      authRepo: authRepo,
     ),
   );
 }
@@ -31,12 +39,14 @@ class SnackyApp extends StatefulWidget {
   final ArticleRepository articleRepo;
   final FavoriteRepository favoriteRepo;
   final TagRepository tagRepo;
+  final AuthRepository authRepo;
 
   const SnackyApp({
     super.key,
     required this.articleRepo,
     required this.favoriteRepo,
     required this.tagRepo,
+    required this.authRepo,
   });
 
   @override
@@ -86,6 +96,7 @@ class _SnackyAppState extends State<SnackyApp> {
         articleRepo: widget.articleRepo,
         favoriteRepo: widget.favoriteRepo,
         tagRepo: widget.tagRepo,
+        authRepo: widget.authRepo,
       ),
     );
   }

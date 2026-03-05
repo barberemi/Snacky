@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:snacky/main.dart';
 import 'package:snacky/models/article.dart';
+import 'package:snacky/models/auth_user.dart';
 import 'package:snacky/repositories/article_repository.dart';
+import 'package:snacky/repositories/auth_repository.dart';
 import 'package:snacky/repositories/tag_repository.dart';
 import 'package:snacky/repositories/favorite_repository.dart';
+import 'package:snacky/screens/login_screen.dart';
 import '../widgets/tag_selector.dart';
 import '../widgets/news_card.dart';
 
@@ -11,12 +14,14 @@ class SearchScreen extends StatefulWidget {
   final ArticleRepository articleRepo;
   final FavoriteRepository favoriteRepo;
   final TagRepository tagRepo;
+  final AuthRepository authRepo;
 
   const SearchScreen({
     super.key,
     required this.articleRepo,
     required this.favoriteRepo,
     required this.tagRepo,
+    required this.authRepo,
   });
 
   @override
@@ -30,7 +35,10 @@ class _SearchScreenState extends State<SearchScreen> {
   List<String> _tags = ["Tout", "Favoris"];
   List<Article> _articles = [];
   bool _isLoading = true;
-  String? _searchError; // Message d'erreur validation du champ
+  String? _searchError;
+
+  // Utilisateur courant (null = non connecté)
+  AuthUser? get _currentUser => widget.authRepo.currentUser;
 
   final String _userId = 'user_1';
 
@@ -153,8 +161,24 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {});
   }
 
+  /// Ouvre la page de connexion et met à jour l'état si l'utilisateur
+  /// s'est connecté ou inscrit.
+  Future<void> _openLogin() async {
+    await Navigator.of(context).push<dynamic>(
+      MaterialPageRoute(builder: (_) => LoginScreen(authRepo: widget.authRepo)),
+    );
+    // Rafraîchit le header quel que soit le résultat
+    setState(() {});
+  }
+
+  Future<void> _logout() async {
+    await widget.authRepo.logout();
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = _currentUser;
     List<Article> filteredNews;
     if (_selectedTag == "Favoris") {
       filteredNews = widget.favoriteRepo.getFavorites();
@@ -184,18 +208,36 @@ class _SearchScreenState extends State<SearchScreen> {
                       color: Color(0xFF3F51B5),
                     ),
                   ),
-                  IconButton(
-                    tooltip: SnackyApp.of(context).isDark
-                        ? 'Passer en mode clair'
-                        : 'Passer en mode sombre',
-                    icon: Icon(
-                      SnackyApp.of(context).isDark
-                          ? Icons.light_mode_rounded
-                          : Icons.dark_mode_rounded,
-                      color: const Color(0xFF3F51B5),
-                      size: 28,
-                    ),
-                    onPressed: () => SnackyApp.of(context).toggleTheme(),
+                  Row(
+                    children: [
+                      // ── Bouton dark/light ───────────────────────────────
+                      IconButton(
+                        tooltip: SnackyApp.of(context).isDark
+                            ? 'Passer en mode clair'
+                            : 'Passer en mode sombre',
+                        icon: Icon(
+                          SnackyApp.of(context).isDark
+                              ? Icons.light_mode_rounded
+                              : Icons.dark_mode_rounded,
+                          color: const Color(0xFF3F51B5),
+                          size: 26,
+                        ),
+                        onPressed: () => SnackyApp.of(context).toggleTheme(),
+                      ),
+                      // ── Bouton profil / connexion ───────────────────────
+                      if (user == null)
+                        IconButton(
+                          tooltip: 'Se connecter',
+                          icon: const Icon(
+                            Icons.account_circle_outlined,
+                            color: Color(0xFF3F51B5),
+                            size: 26,
+                          ),
+                          onPressed: _openLogin,
+                        )
+                      else
+                        _UserAvatar(user: user, onLogout: _logout),
+                    ],
                   ),
                 ],
               ),
@@ -306,6 +348,112 @@ class _SearchScreenState extends State<SearchScreen> {
       child: const Text(
         "Ajouter ce thème",
         style: TextStyle(color: Colors.white, fontSize: 16),
+      ),
+    );
+  }
+}
+
+/// Avatar cliquable affiché quand l'utilisateur est connecté.
+/// Un appui long (ou un tap) ouvre un menu avec l'option de déconnexion.
+class _UserAvatar extends StatelessWidget {
+  final AuthUser user;
+  final VoidCallback onLogout;
+
+  const _UserAvatar({required this.user, required this.onLogout});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showMenu(context),
+      child: Tooltip(
+        message: user.name,
+        child: CircleAvatar(
+          radius: 18,
+          backgroundColor: const Color(0xFF3F51B5),
+          child: Text(
+            user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showMenu(BuildContext context) {
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Ligne d'identité
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: const Color(0xFF3F51B5),
+                    child: Text(
+                      user.name[0].toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        user.email,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Divider(),
+              const SizedBox(height: 8),
+              // Déconnexion
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(
+                  Icons.logout_rounded,
+                  color: Colors.redAccent,
+                ),
+                title: const Text(
+                  'Se déconnecter',
+                  style: TextStyle(color: Colors.redAccent),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onLogout();
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

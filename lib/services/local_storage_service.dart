@@ -7,7 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LocalStorageService {
   static const String _favoritesKey = 'favorites';
   static const String _articlesKey = 'cached_articles';
-  static const String _userTagsKey = 'user_tags'; // Nouveau
+  static const String _userTagsKey = 'user_tags';
+  static const String _sessionKey = 'auth_session'; // Session utilisateur
 
   final SharedPreferences _prefs;
 
@@ -60,5 +61,25 @@ class LocalStorageService {
   /// Écrit la liste des tags personnalisés
   Future<void> writeUserTags(List<String> tags) async {
     await _prefs.setStringList(_userTagsKey, tags);
+  }
+
+  // ─── SESSION UTILISATEUR ─────────────────────────────────────────────────
+
+  /// Lit les données de session persistées (utilisateur sérialisé en JSON).
+  /// Retourne null si aucune session n'existe.
+  Map<String, dynamic>? readSession() {
+    final raw = _prefs.getString(_sessionKey);
+    if (raw == null) return null;
+    return jsonDecode(raw) as Map<String, dynamic>;
+  }
+
+  /// Persiste les données de session (ex: objet AuthUser sérialisé).
+  Future<void> writeSession(Map<String, dynamic> session) async {
+    await _prefs.setString(_sessionKey, jsonEncode(session));
+  }
+
+  /// Supprime la session (déconnexion).
+  Future<void> clearSession() async {
+    await _prefs.remove(_sessionKey);
   }
 }
