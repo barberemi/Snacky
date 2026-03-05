@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snacky/repositories/auth_repository.dart';
 import 'package:snacky/services/local_storage_service.dart';
 import 'package:snacky/repositories/article_repository.dart';
 import 'package:snacky/repositories/favorite_repository.dart';
 import 'package:snacky/repositories/tag_repository.dart';
 import 'package:snacky/screens/search_screen.dart';
+import 'package:snacky/screens/onboarding_screen.dart';
 import 'package:snacky/services/mock_auth_service.dart';
 
 void main() async {
@@ -24,12 +26,17 @@ void main() async {
     authRepo.init(), // Restaure la session persistée
   ]);
 
+  // Vérifie si l'onboarding a déjà été vu
+  final prefs = await SharedPreferences.getInstance();
+  final onboardingDone = prefs.getBool(kOnboardingDoneKey) ?? false;
+
   runApp(
     SnackyApp(
       articleRepo: articleRepo,
       favoriteRepo: favoriteRepo,
       tagRepo: tagRepo,
       authRepo: authRepo,
+      showOnboarding: !onboardingDone,
     ),
   );
 }
@@ -40,6 +47,7 @@ class SnackyApp extends StatefulWidget {
   final FavoriteRepository favoriteRepo;
   final TagRepository tagRepo;
   final AuthRepository authRepo;
+  final bool showOnboarding;
 
   const SnackyApp({
     super.key,
@@ -47,6 +55,7 @@ class SnackyApp extends StatefulWidget {
     required this.favoriteRepo,
     required this.tagRepo,
     required this.authRepo,
+    this.showOnboarding = false,
   });
 
   @override
@@ -92,12 +101,19 @@ class _SnackyAppState extends State<SnackyApp> {
           brightness: Brightness.dark,
         ),
       ),
-      home: SearchScreen(
-        articleRepo: widget.articleRepo,
-        favoriteRepo: widget.favoriteRepo,
-        tagRepo: widget.tagRepo,
-        authRepo: widget.authRepo,
-      ),
+      home: widget.showOnboarding
+          ? OnboardingScreen(
+              articleRepo: widget.articleRepo,
+              favoriteRepo: widget.favoriteRepo,
+              tagRepo: widget.tagRepo,
+              authRepo: widget.authRepo,
+            )
+          : SearchScreen(
+              articleRepo: widget.articleRepo,
+              favoriteRepo: widget.favoriteRepo,
+              tagRepo: widget.tagRepo,
+              authRepo: widget.authRepo,
+            ),
     );
   }
 }
