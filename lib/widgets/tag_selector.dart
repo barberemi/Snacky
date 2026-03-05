@@ -17,6 +17,8 @@ class TagSelector extends StatelessWidget {
     // Séparation des tags principaux et secondaires
     final mainTags = tags.where((t) => t == "Tout" || t == "Favoris").toList();
     final otherTags = tags.where((t) => t != "Tout" && t != "Favoris").toList();
+    final labelColor = Theme.of(context).colorScheme.onSurface;
+    final unselectedBorder = Theme.of(context).colorScheme.outlineVariant;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,9 +40,7 @@ class TagSelector extends StatelessWidget {
                   selectedColor: const Color(0xFF3F51B5).withOpacity(0.2),
                   checkmarkColor: const Color(0xFF3F51B5),
                   labelStyle: TextStyle(
-                    color: isSelected
-                        ? const Color(0xFF3F51B5)
-                        : Colors.black87,
+                    color: isSelected ? const Color(0xFF3F51B5) : labelColor,
                     fontWeight: isSelected
                         ? FontWeight.bold
                         : FontWeight.normal,
@@ -50,7 +50,7 @@ class TagSelector extends StatelessWidget {
                     side: BorderSide(
                       color: isSelected
                           ? const Color(0xFF3F51B5)
-                          : Colors.grey.shade300,
+                          : unselectedBorder,
                     ),
                   ),
                 ),
@@ -76,9 +76,7 @@ class TagSelector extends StatelessWidget {
                   selectedColor: const Color(0xFF3F51B5).withOpacity(0.2),
                   checkmarkColor: const Color(0xFF3F51B5),
                   labelStyle: TextStyle(
-                    color: isSelected
-                        ? const Color(0xFF3F51B5)
-                        : Colors.black87,
+                    color: isSelected ? const Color(0xFF3F51B5) : labelColor,
                     fontWeight: isSelected
                         ? FontWeight.bold
                         : FontWeight.normal,
@@ -88,7 +86,7 @@ class TagSelector extends StatelessWidget {
                     side: BorderSide(
                       color: isSelected
                           ? const Color(0xFF3F51B5)
-                          : Colors.grey.shade300,
+                          : unselectedBorder,
                     ),
                   ),
                 ),

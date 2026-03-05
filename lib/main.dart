@@ -18,18 +18,75 @@ void main() async {
   await Future.wait([favoriteRepo.init(), tagRepo.init()]);
 
   runApp(
-    MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Snacky',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF3F51B5)),
-      ),
-      home: SearchScreen(
-        articleRepo: articleRepo,
-        favoriteRepo: favoriteRepo,
-        tagRepo: tagRepo,
-      ),
+    SnackyApp(
+      articleRepo: articleRepo,
+      favoriteRepo: favoriteRepo,
+      tagRepo: tagRepo,
     ),
   );
+}
+
+/// Widget racine avec gestion du thème clair/sombre.
+class SnackyApp extends StatefulWidget {
+  final ArticleRepository articleRepo;
+  final FavoriteRepository favoriteRepo;
+  final TagRepository tagRepo;
+
+  const SnackyApp({
+    super.key,
+    required this.articleRepo,
+    required this.favoriteRepo,
+    required this.tagRepo,
+  });
+
+  @override
+  State<SnackyApp> createState() => _SnackyAppState();
+
+  /// Accès depuis n'importe quel descendant.
+  static _SnackyAppState of(BuildContext context) {
+    return context.findAncestorStateOfType<_SnackyAppState>()!;
+  }
+}
+
+class _SnackyAppState extends State<SnackyApp> {
+  ThemeMode _themeMode = ThemeMode.light;
+
+  void toggleTheme() {
+    setState(() {
+      _themeMode = _themeMode == ThemeMode.light
+          ? ThemeMode.dark
+          : ThemeMode.light;
+    });
+  }
+
+  bool get isDark => _themeMode == ThemeMode.dark;
+
+  @override
+  Widget build(BuildContext context) {
+    const seed = Color(0xFF3F51B5);
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Snacky',
+      themeMode: _themeMode,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: seed,
+          brightness: Brightness.light,
+        ),
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: seed,
+          brightness: Brightness.dark,
+        ),
+      ),
+      home: SearchScreen(
+        articleRepo: widget.articleRepo,
+        favoriteRepo: widget.favoriteRepo,
+        tagRepo: widget.tagRepo,
+      ),
+    );
+  }
 }

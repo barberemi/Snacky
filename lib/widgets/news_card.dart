@@ -45,17 +45,21 @@ class _NewsCardState extends State<NewsCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = const Color(0xFF3F51B5);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF3F51B5).withOpacity(_isExpanded ? 0.08 : 0.03),
+        color: isDark
+            ? (baseColor.withOpacity(_isExpanded ? 0.20 : 0.08))
+            : (baseColor.withOpacity(_isExpanded ? 0.08 : 0.03)),
         borderRadius: BorderRadius.circular(15),
         border: Border.all(
           color: _isExpanded
-              ? const Color(0xFF3F51B5).withOpacity(0.3)
-              : Colors.grey.shade100,
+              ? baseColor.withOpacity(0.3)
+              : (isDark ? Colors.grey.shade700 : Colors.grey.shade100),
         ),
       ),
       child: InkWell(
@@ -107,7 +111,9 @@ class _NewsCardState extends State<NewsCard> {
                         Text(
                           "${widget.article.source} • ${widget.article.time}",
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                             fontSize: 13,
                           ),
                         ),
@@ -202,10 +208,14 @@ class _ConfidenceBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark
+        ? confidence.color.withOpacity(0.15)
+        : confidence.backgroundColor;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: confidence.backgroundColor,
+        color: bg,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: confidence.color.withOpacity(0.4)),
       ),
@@ -233,7 +243,7 @@ Widget _buildPlaceholder() {
     width: 50,
     height: 50,
     decoration: BoxDecoration(
-      color: const Color(0xFF3F51B5),
+      color: const Color(0xFF3F51B5).withOpacity(0.7),
       borderRadius: BorderRadius.circular(10),
     ),
     child: const Icon(Icons.article, color: Colors.white),
@@ -242,13 +252,13 @@ Widget _buildPlaceholder() {
 
 Widget _buildShimmerPlaceholder() {
   return Shimmer.fromColors(
-    baseColor: const Color(0xFF3F51B5).withOpacity(0.1),
+    baseColor: const Color(0xFF3F51B5).withOpacity(0.15),
     highlightColor: const Color(0xFF3F51B5).withOpacity(0.05),
     child: Container(
       width: 50,
       height: 50,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF3F51B5).withOpacity(0.1),
         borderRadius: BorderRadius.circular(10),
       ),
     ),

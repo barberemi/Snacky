@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snacky/main.dart';
 import 'package:snacky/models/article.dart';
 import 'package:snacky/repositories/article_repository.dart';
 import 'package:snacky/repositories/tag_repository.dart';
@@ -164,7 +165,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 25.0),
@@ -172,13 +173,31 @@ class _SearchScreenState extends State<SearchScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
-              const Text(
-                "Snacky 🍿",
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF3F51B5),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Snacky 🍿",
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF3F51B5),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: SnackyApp.of(context).isDark
+                        ? 'Passer en mode clair'
+                        : 'Passer en mode sombre',
+                    icon: Icon(
+                      SnackyApp.of(context).isDark
+                          ? Icons.light_mode_rounded
+                          : Icons.dark_mode_rounded,
+                      color: const Color(0xFF3F51B5),
+                      size: 28,
+                    ),
+                    onPressed: () => SnackyApp.of(context).toggleTheme(),
+                  ),
+                ],
               ),
               const SizedBox(height: 30),
               const Text(
@@ -260,7 +279,7 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         errorText: _searchError,
         filled: true,
-        fillColor: const Color(0xFF3F51B5).withOpacity(0.05),
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
           borderSide: BorderSide.none,
