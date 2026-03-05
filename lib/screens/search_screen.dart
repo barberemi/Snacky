@@ -47,7 +47,7 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  /// Validation en temps réel : max 2 mots
+  /// Validation en temps réel : max 3 mots
   void _onSearchTextChanged() {
     final wordCount = _searchController.text
         .trim()
@@ -55,8 +55,8 @@ class _SearchScreenState extends State<SearchScreen> {
         .where((w) => w.isNotEmpty)
         .length;
     setState(() {
-      if (wordCount > 2) {
-        _searchError = 'Maximum 2 mots (ce sera ton tag de veille)';
+      if (wordCount > 3) {
+        _searchError = 'Maximum 3 mots (ce sera ton tag de veille)';
       } else {
         _searchError = null;
       }
@@ -96,14 +96,14 @@ class _SearchScreenState extends State<SearchScreen> {
     final input = _searchController.text.trim();
     if (input.isEmpty) return;
 
-    // Validation : max 2 mots
+    // Validation : max 3 mots
     final wordCount = input
         .split(RegExp(r'\s+'))
         .where((w) => w.isNotEmpty)
         .length;
-    if (wordCount > 2) {
+    if (wordCount > 3) {
       setState(
-        () => _searchError = 'Maximum 2 mots (ce sera ton tag de veille)',
+        () => _searchError = 'Maximum 3 mots (ce sera ton tag de veille)',
       );
       return;
     }
@@ -253,7 +253,7 @@ class _SearchScreenState extends State<SearchScreen> {
       textCapitalization: TextCapitalization.words,
       onSubmitted: (_) => _onAddTag(),
       decoration: InputDecoration(
-        hintText: "Ajoute un thème de veille (1-2 mots)...",
+        hintText: "Ajoute un thème de veille...",
         prefixIcon: const Icon(
           Icons.add_circle_outline,
           color: Color(0xFF3F51B5),
