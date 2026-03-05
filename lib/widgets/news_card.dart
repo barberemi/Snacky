@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:snacky/models/article.dart';
 import 'package:snacky/models/confidence_level.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:snacky/screens/article_detail_screen.dart';
 import 'package:shimmer/shimmer.dart';
 
 class NewsCard extends StatefulWidget {
   final Article article;
-  final bool isFavorite; // Ajouté
-  final VoidCallback onFavoriteToggle; // Ajouté
+  final bool isFavorite;
+  final VoidCallback onFavoriteToggle;
   const NewsCard({
     super.key,
     required this.article,
@@ -21,17 +21,6 @@ class NewsCard extends StatefulWidget {
 
 class _NewsCardState extends State<NewsCard> {
   bool _isExpanded = false;
-
-  // Fonction pour ouvrir le navigateur
-  Future<void> _launchURL() async {
-    final String? urlString = widget.article.url;
-    if (urlString != null) {
-      final Uri url = Uri.parse(urlString);
-      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-        throw Exception('Impossible d\'ouvrir $urlString');
-      }
-    }
-  }
 
   @override
   void didUpdateWidget(covariant NewsCard oldWidget) {
@@ -74,25 +63,26 @@ class _NewsCardState extends State<NewsCard> {
                   // --- LOGIQUE D'IMAGE AVEC FALLBACK ---
                   widget.article.image != null &&
                           widget.article.image!.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.network(
-                            widget.article.image!,
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.cover,
-                            // --- EFFET SHIMMER PENDANT LE CHARGEMENT ---
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null)
-                                return child; // Image chargée
-                              return _buildShimmerPlaceholder(); // En cours de chargement
-                            },
-                            // Si l'URL est là mais que l'image ne charge pas (404, etc.)
-                            errorBuilder: (context, error, stackTrace) =>
-                                _buildPlaceholder(),
+                      ? Hero(
+                          tag: 'article_image_${widget.article.id}',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(
+                              widget.article.image!,
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return _buildShimmerPlaceholder();
+                                  },
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildPlaceholder(),
+                            ),
                           ),
                         )
-                      : _buildPlaceholder(), // Si l'URL est null ou vide
+                      : _buildPlaceholder(),
 
                   const SizedBox(width: 12),
 
@@ -177,7 +167,17 @@ class _NewsCardState extends State<NewsCard> {
                       const SizedBox(height: 10),
 
                       // LE BOUTON CLIQUABLE
-                      _ArticleLink(onTap: _launchURL),
+                      _ArticleLink(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ArticleDetailScreen(
+                              article: widget.article,
+                              isFavorite: widget.isFavorite,
+                              onFavoriteToggle: widget.onFavoriteToggle,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
