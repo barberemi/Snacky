@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 
-class TagSelector extends StatelessWidget {
+class TagSelector extends StatefulWidget {
   final List<String> tags;
   final String selectedTag;
   final Function(String) onTagSelected;
-  // Appelé avec le nom du tag quand l'utilisateur veut le supprimer (appui long).
-  // Null = désactivé (tags système non supprimables).
   final Function(String)? onTagRemoved;
-  // Nombre de favoris affiché comme badge sur le tag "Favoris"
   final int favoritesCount;
 
   const TagSelector({
@@ -20,12 +17,22 @@ class TagSelector extends StatelessWidget {
   });
 
   @override
+  State<TagSelector> createState() => _TagSelectorState();
+}
+
+class _TagSelectorState extends State<TagSelector> {
+  void _onTap(String tag) {
+    widget.onTagSelected(tag);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Séparation des tags principaux et secondaires
-    final mainTags = tags.where((t) => t == "Tout" || t == "Favoris").toList();
-    final otherTags = tags.where((t) => t != "Tout" && t != "Favoris").toList();
-    final labelColor = Theme.of(context).colorScheme.onSurface;
-    final unselectedBorder = Theme.of(context).colorScheme.outlineVariant;
+    final mainTags = widget.tags
+        .where((t) => t == "Tout" || t == "Favoris")
+        .toList();
+    final otherTags = widget.tags
+        .where((t) => t != "Tout" && t != "Favoris")
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,30 +44,14 @@ class TagSelector extends StatelessWidget {
             itemCount: mainTags.length,
             itemBuilder: (context, index) {
               final tag = mainTags[index];
-              final isSelected = selectedTag == tag;
-              final showBadge = tag == "Favoris" && favoritesCount > 0;
-              final chip = FilterChip(
-                label: Text(tag),
-                selected: isSelected,
-                onSelected: (_) => onTagSelected(tag),
-                selectedColor: const Color(0xFF3F51B5).withOpacity(0.2),
-                checkmarkColor: const Color(0xFF3F51B5),
-                labelStyle: TextStyle(
-                  color: isSelected ? const Color(0xFF3F51B5) : labelColor,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(
-                    color: isSelected
-                        ? const Color(0xFF3F51B5)
-                        : unselectedBorder,
-                  ),
-                ),
+              final showBadge = tag == "Favoris" && widget.favoritesCount > 0;
+              final chip = _TagChip(
+                tag: tag,
+                isSelected: widget.selectedTag == tag,
+                onTap: () => _onTap(tag),
               );
               return Padding(
                 padding: const EdgeInsets.only(right: 10.0),
-                // Stack pour superposer la pastille SANS affecter la hauteur du chip
                 child: showBadge
                     ? Stack(
                         clipBehavior: Clip.none,
@@ -80,7 +71,7 @@ class TagSelector extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
-                                '$favoritesCount',
+                                '${widget.favoritesCount}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 10,
@@ -106,44 +97,19 @@ class TagSelector extends StatelessWidget {
               itemCount: otherTags.length,
               itemBuilder: (context, index) {
                 final tag = otherTags[index];
-                final isSelected = selectedTag == tag;
                 return Padding(
                   padding: const EdgeInsets.only(right: 10.0),
                   child: GestureDetector(
-                    // Appui long → confirmation de suppression
-                    onLongPress: onTagRemoved != null
+                    onLongPress: widget.onTagRemoved != null
                         ? () => _confirmRemove(context, tag)
                         : null,
-                    child: FilterChip(
-                      label: Text(tag),
-                      selected: isSelected,
-                      onSelected: (_) => onTagSelected(tag),
-                      selectedColor: const Color(0xFF3F51B5).withOpacity(0.2),
-                      checkmarkColor: const Color(0xFF3F51B5),
-                      labelStyle: TextStyle(
-                        color: isSelected
-                            ? const Color(0xFF3F51B5)
-                            : labelColor,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                      // Petite icône ✕ pour indiquer la suppressibilité
-                      deleteIcon: onTagRemoved != null
-                          ? const Icon(Icons.close, size: 14)
-                          : null,
-                      onDeleted: onTagRemoved != null
+                    child: _TagChip(
+                      tag: tag,
+                      isSelected: widget.selectedTag == tag,
+                      onTap: () => _onTap(tag),
+                      onDelete: widget.onTagRemoved != null
                           ? () => _confirmRemove(context, tag)
                           : null,
-                      deleteIconColor: const Color(0xFF3F51B5).withOpacity(0.6),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: isSelected
-                              ? const Color(0xFF3F51B5)
-                              : unselectedBorder,
-                        ),
-                      ),
                     ),
                   ),
                 );
@@ -174,7 +140,88 @@ class TagSelector extends StatelessWidget {
         ],
       ),
     ).then((confirmed) {
-      if (confirmed == true) onTagRemoved!(tag);
+      if (confirmed == true) widget.onTagRemoved!(tag);
     });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Chip individuel animé
+// ─────────────────────────────────────────────────────────────
+class _TagChip extends StatelessWidget {
+  final String tag;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final VoidCallback? onDelete;
+
+  static const _brand = Color(0xFF3F51B5);
+
+  const _TagChip({
+    required this.tag,
+    required this.isSelected,
+    required this.onTap,
+    this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final unselectedBorder = Theme.of(context).colorScheme.outlineVariant;
+    final labelColor = Theme.of(context).colorScheme.onSurface;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: isSelected
+            ? _brand // fond plein quand actif
+            : (isDark ? Colors.transparent : Colors.transparent),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isSelected ? _brand : unselectedBorder,
+          width: isSelected ? 0 : 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(12, 6, onDelete != null ? 4 : 12, 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    color: isSelected ? Colors.white : labelColor,
+                  ),
+                  child: Text(tag),
+                ),
+                if (onDelete != null) ...[
+                  const SizedBox(width: 2),
+                  GestureDetector(
+                    onTap: onDelete,
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 14,
+                      color: isSelected
+                          ? Colors.white.withOpacity(0.8)
+                          : _brand.withOpacity(0.6),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

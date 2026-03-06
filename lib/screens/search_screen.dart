@@ -43,6 +43,9 @@ class _SearchScreenState extends State<SearchScreen> {
   // Header animé : true = scrollé, header compact
   bool _isScrolled = false;
 
+  // Direction du slide lors du changement de tag : 1 = droite→gauche, -1 = gauche→droite
+  int _slideDirection = 1;
+
   // Utilisateur courant (null = non connecté)
   AuthUser? get _currentUser => widget.authRepo.currentUser;
 
@@ -102,7 +105,12 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _onTagChanged(String tag) async {
-    setState(() => _selectedTag = tag);
+    final oldIndex = _tags.indexOf(_selectedTag);
+    final newIndex = _tags.indexOf(tag);
+    setState(() {
+      _slideDirection = newIndex >= oldIndex ? 1 : -1;
+      _selectedTag = tag;
+    });
     if (tag == "Tout" || tag == "Favoris") return;
 
     setState(() => _isLoading = true);
@@ -305,6 +313,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
+      // ── Bouton "Ajouter ce thème" toujours visible ──────────────────
+      floatingActionButton: _buildFAB(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 25.0),
@@ -391,8 +402,8 @@ class _SearchScreenState extends State<SearchScreen> {
                     const SizedBox(height: 30),
                     _buildSearchField(),
                     const SizedBox(height: 20),
-                    _buildAddTagButton(),
-                    const SizedBox(height: 30),
+                    // Le bouton est maintenant en FAB, on garde juste l'espace
+                    const SizedBox(height: 10),
                   ],
                 ),
                 secondChild: const SizedBox.shrink(),
@@ -416,6 +427,25 @@ class _SearchScreenState extends State<SearchScreen> {
                       )
                     : AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
+                        transitionBuilder: (child, anim) {
+                          final offset =
+                              Tween<Offset>(
+                                begin: Offset(0.08 * _slideDirection, 0),
+                                end: Offset.zero,
+                              ).animate(
+                                CurvedAnimation(
+                                  parent: anim,
+                                  curve: Curves.easeOut,
+                                ),
+                              );
+                          return FadeTransition(
+                            opacity: anim,
+                            child: SlideTransition(
+                              position: offset,
+                              child: child,
+                            ),
+                          );
+                        },
                         child: ListView.builder(
                           key: ValueKey(_selectedTag),
                           controller: _scrollController,
@@ -472,20 +502,29 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildAddTagButton() {
+  Widget _buildFAB() {
     final hasError = _searchError != null;
     final isEmpty = _searchController.text.trim().isEmpty;
-    return ElevatedButton(
-      onPressed: (hasError || isEmpty) ? null : _onAddTag,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF3F51B5),
-        disabledBackgroundColor: Colors.grey.shade300,
-        minimumSize: const Size(double.infinity, 55),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      ),
-      child: const Text(
-        "Ajouter ce thème",
-        style: TextStyle(color: Colors.white, fontSize: 16),
+    final enabled = !hasError && !isEmpty;
+    return AnimatedSlide(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      // Se décale vers le bas quand désactivé pour ne pas gêner
+      offset: enabled ? Offset.zero : const Offset(0, 0.2),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 250),
+        opacity: enabled ? 1.0 : 0.55,
+        child: FloatingActionButton.extended(
+          onPressed: enabled ? _onAddTag : null,
+          backgroundColor: const Color(0xFF3F51B5),
+          foregroundColor: Colors.white,
+          elevation: enabled ? 4 : 0,
+          icon: const Icon(Icons.add_rounded, size: 20),
+          label: const Text(
+            'Ajouter ce thème',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
+        ),
       ),
     );
   }
