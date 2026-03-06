@@ -5,12 +5,15 @@ import 'package:snacky/models/article.dart';
 import 'package:snacky/models/auth_user.dart';
 import 'package:snacky/repositories/article_repository.dart';
 import 'package:snacky/repositories/auth_repository.dart';
-import 'package:snacky/repositories/tag_repository.dart';
 import 'package:snacky/repositories/favorite_repository.dart';
+import 'package:snacky/repositories/tag_repository.dart';
 import 'package:snacky/screens/login_screen.dart';
 import '../widgets/tag_selector.dart';
 import '../widgets/news_card.dart';
 import '../widgets/news_card_skeleton.dart';
+
+// ── Critères de tri de la liste d'articles ────────────────────────────────
+enum _SortOrder { recent, confidence }
 
 class SearchScreen extends StatefulWidget {
   final ArticleRepository articleRepo;
@@ -45,6 +48,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
   // Direction du slide lors du changement de tag : 1 = droite→gauche, -1 = gauche→droite
   int _slideDirection = 1;
+
+  // Critère de tri actif
+  _SortOrder _sortOrder = _SortOrder.recent;
 
   // Utilisateur courant (null = non connecté)
   AuthUser? get _currentUser => widget.authRepo.currentUser;
@@ -311,6 +317,17 @@ class _SearchScreenState extends State<SearchScreen> {
       filteredNews = _articles;
     }
 
+    // ── Tri ───────────────────────────────────────────────────────────
+    filteredNews = List.from(filteredNews);
+    if (_sortOrder == _SortOrder.confidence) {
+      filteredNews.sort(
+        (a, b) => a.confidence.index.compareTo(b.confidence.index),
+      );
+    } else {
+      // _SortOrder.recent → du plus récent au plus vieux
+      filteredNews.sort((a, b) => b.fetchedAt.compareTo(a.fetchedAt));
+    }
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       // ── Bouton "Ajouter ce thème" toujours visible ──────────────────
@@ -383,15 +400,6 @@ class _SearchScreenState extends State<SearchScreen> {
                 firstChild: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Tes thèmes favoris",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
                     TagSelector(
                       tags: _tags,
                       selectedTag: _selectedTag,
@@ -409,10 +417,41 @@ class _SearchScreenState extends State<SearchScreen> {
                 secondChild: const SizedBox.shrink(),
               ),
 
-              // ── Titre liste ───────────────────────────────────────────
-              const Text(
-                "Derniers Snacks",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              // ── Titre liste + compteur + bouton tri ──────────────────
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Derniers Snacks',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          if (!_isLoading)
+                            TextSpan(
+                              text: '  ${filteredNews.length}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (!_isLoading && filteredNews.isNotEmpty)
+                    _SortButton(
+                      current: _sortOrder,
+                      onChanged: (v) => setState(() => _sortOrder = v),
+                    ),
+                ],
               ),
               const SizedBox(height: 10),
 
@@ -696,6 +735,39 @@ class _AnimatedCardState extends State<_AnimatedCard>
     return FadeTransition(
       opacity: _fade,
       child: SlideTransition(position: _slide, child: widget.child),
+    );
+  }
+}
+
+/// Bouton de tri affiché à côté du titre "Derniers Snacks".
+class _SortButton extends StatelessWidget {
+  final _SortOrder current;
+  final ValueChanged<_SortOrder> onChanged;
+
+  const _SortButton({required this.current, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final isRecent = current == _SortOrder.recent;
+    return TextButton.icon(
+      onPressed: () =>
+          onChanged(isRecent ? _SortOrder.confidence : _SortOrder.recent),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        foregroundColor: const Color(0xFF3F51B5),
+        backgroundColor: const Color(0xFF3F51B5).withOpacity(0.08),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      icon: Icon(
+        isRecent ? Icons.access_time_rounded : Icons.verified_rounded,
+        size: 14,
+      ),
+      label: Text(
+        isRecent ? 'Récents' : 'Fiabilité',
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      ),
     );
   }
 }

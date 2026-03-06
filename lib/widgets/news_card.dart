@@ -52,138 +52,149 @@ class _NewsCardState extends State<NewsCard> {
         ),
       ),
       child: InkWell(
+        borderRadius: BorderRadius.circular(15),
         onTap: () => setState(() => _isExpanded = !_isExpanded),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // --- LOGIQUE D'IMAGE AVEC FALLBACK ---
-                  widget.article.image != null &&
-                          widget.article.image!.isNotEmpty
-                      ? Hero(
-                          tag: 'article_image_${widget.article.id}',
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.network(
-                              widget.article.image!,
-                              width: 50,
-                              height: 50,
-                              fit: BoxFit.cover,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return _buildShimmerPlaceholder();
-                                  },
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _buildPlaceholder(),
-                            ),
-                          ),
-                        )
-                      : _buildPlaceholder(),
-
-                  const SizedBox(width: 12),
-
-                  // Le reste de tes infos (Titre, Source, etc.)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.article.title, // Correction finale
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
-                        Text(
-                          "${widget.article.source} • ${widget.article.time}",
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        _ConfidenceBadge(confidence: widget.article.confidence),
-                      ],
-                    ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Image bannière pleine largeur ──────────────────────────
+            if (widget.article.image != null &&
+                widget.article.image!.isNotEmpty)
+              Hero(
+                tag: 'article_image_${widget.article.id}',
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(14),
                   ),
-                  // Icône Favoris
-                  IconButton(
-                    icon: Icon(
-                      widget.isFavorite ? Icons.star : Icons.star_border,
-                      color: widget.isFavorite ? Colors.amber : Colors.grey,
-                    ),
-                    onPressed: widget.onFavoriteToggle,
-                  ),
-                  Icon(
-                    _isExpanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    color: const Color(0xFF3F51B5),
-                  ),
-                ],
-              ),
-
-              // LA PARTIE QUI SE DÉPLIE
-              ClipRect(
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 300),
-                  alignment: Alignment.topLeft,
-                  heightFactor: _isExpanded ? 1.0 : 0.0,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Divider(),
-                      Text(widget.article.description),
-                      const SizedBox(height: 8),
-                      // Raison du score de confiance
-                      if (widget.article.confidenceReason != null)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              widget.article.confidence.icon,
-                              size: 14,
-                              color: widget.article.confidence.color,
-                            ),
-                            const SizedBox(width: 5),
-                            Expanded(
-                              child: Text(
-                                widget.article.confidenceReason!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: widget.article.confidence.color,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      const SizedBox(height: 10),
-
-                      // LE BOUTON CLIQUABLE
-                      _ArticleLink(
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ArticleDetailScreen(
-                              article: widget.article,
-                              isFavorite: widget.isFavorite,
-                              onFavoriteToggle: widget.onFavoriteToggle,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: Image.network(
+                    widget.article.image!,
+                    width: double.infinity,
+                    height: 160,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return _buildBannerShimmer();
+                    },
+                    errorBuilder: (context, error, stackTrace) =>
+                        _buildBannerPlaceholder(),
                   ),
                 ),
               ),
-            ],
-          ),
+
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Miniature uniquement si pas d'image bannière
+                      if (widget.article.image == null ||
+                          widget.article.image!.isEmpty) ...[
+                        _buildPlaceholder(),
+                        const SizedBox(width: 12),
+                      ],
+
+                      // Titre + source + badge
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.article.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "${widget.article.source} • ${widget.article.time}",
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            _ConfidenceBadge(
+                              confidence: widget.article.confidence,
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Icône Favoris
+                      IconButton(
+                        icon: Icon(
+                          widget.isFavorite ? Icons.star : Icons.star_border,
+                          color: widget.isFavorite ? Colors.amber : Colors.grey,
+                        ),
+                        onPressed: widget.onFavoriteToggle,
+                      ),
+                      Icon(
+                        _isExpanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
+                        color: const Color(0xFF3F51B5),
+                      ),
+                    ],
+                  ),
+
+                  // ── Partie dépliable ────────────────────────────────
+                  ClipRect(
+                    child: AnimatedAlign(
+                      duration: const Duration(milliseconds: 300),
+                      alignment: Alignment.topLeft,
+                      heightFactor: _isExpanded ? 1.0 : 0.0,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Divider(),
+                          Text(widget.article.description),
+                          const SizedBox(height: 8),
+                          if (widget.article.confidenceReason != null)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  widget.article.confidence.icon,
+                                  size: 14,
+                                  color: widget.article.confidence.color,
+                                ),
+                                const SizedBox(width: 5),
+                                Expanded(
+                                  child: Text(
+                                    widget.article.confidenceReason!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: widget.article.confidence.color,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          const SizedBox(height: 10),
+                          _ArticleLink(
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ArticleDetailScreen(
+                                  article: widget.article,
+                                  isFavorite: widget.isFavorite,
+                                  onFavoriteToggle: widget.onFavoriteToggle,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -239,16 +250,28 @@ Widget _buildPlaceholder() {
   );
 }
 
-Widget _buildShimmerPlaceholder() {
+Widget _buildBannerPlaceholder() {
+  return Container(
+    width: double.infinity,
+    height: 160,
+    decoration: BoxDecoration(
+      color: const Color(0xFF3F51B5).withOpacity(0.12),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+    ),
+    child: const Icon(Icons.image_rounded, size: 40, color: Color(0xFF3F51B5)),
+  );
+}
+
+Widget _buildBannerShimmer() {
   return Shimmer.fromColors(
     baseColor: const Color(0xFF3F51B5).withOpacity(0.15),
     highlightColor: const Color(0xFF3F51B5).withOpacity(0.05),
     child: Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: const Color(0xFF3F51B5).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
+      width: double.infinity,
+      height: 160,
+      decoration: const BoxDecoration(
+        color: Color(0xFFE0E0E0),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
       ),
     ),
   );
