@@ -38,9 +38,10 @@ class _TagSelectorState extends State<TagSelector> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 50,
+          height: 62,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(top: 10),
             itemCount: mainTags.length,
             itemBuilder: (context, index) {
               final tag = mainTags[index];
@@ -67,8 +68,12 @@ class _TagSelectorState extends State<TagSelector> {
                               ),
                               constraints: const BoxConstraints(minWidth: 18),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF3F51B5),
+                                color: const Color(0xFFC62828),
                                 borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 1.5,
+                                ),
                               ),
                               child: Text(
                                 '${widget.favoritesCount}',
@@ -188,7 +193,7 @@ class _TagChip extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(12, 6, onDelete != null ? 4 : 12, 6),
+            padding: EdgeInsets.fromLTRB(12, 16, onDelete != null ? 4 : 12, 16),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
