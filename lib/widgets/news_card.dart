@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:snacky/models/article.dart';
-import 'package:snacky/models/confidence_level.dart';
 import 'package:snacky/screens/article_detail_screen.dart';
+import 'package:snacky/widgets/confidence_badge.dart';
 import 'package:shimmer/shimmer.dart';
 
 class NewsCard extends StatefulWidget {
@@ -118,7 +118,7 @@ class _NewsCardState extends State<NewsCard> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            _ConfidenceBadge(
+                            ConfidenceBadge(
                               confidence: widget.article.confidence,
                             ),
                           ],
@@ -196,43 +196,6 @@ class _NewsCardState extends State<NewsCard> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Badge coloré affichant le niveau de confiance d'un article
-class _ConfidenceBadge extends StatelessWidget {
-  final ConfidenceLevel confidence;
-  const _ConfidenceBadge({required this.confidence});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark
-        ? confidence.color.withOpacity(0.15)
-        : confidence.backgroundColor;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: confidence.color.withOpacity(0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(confidence.icon, size: 11, color: confidence.color),
-          const SizedBox(width: 4),
-          Text(
-            confidence.label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: confidence.color,
-            ),
-          ),
-        ],
       ),
     );
   }

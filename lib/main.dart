@@ -1,42 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:snacky/repositories/auth_repository.dart';
-import 'package:snacky/services/local_storage_service.dart';
 import 'package:snacky/repositories/article_repository.dart';
+import 'package:snacky/repositories/auth_repository.dart';
 import 'package:snacky/repositories/favorite_repository.dart';
 import 'package:snacky/repositories/tag_repository.dart';
 import 'package:snacky/screens/search_screen.dart';
 import 'package:snacky/screens/onboarding_screen.dart';
-import 'package:snacky/services/mock_auth_service.dart';
+import 'package:snacky/services/app_initializer.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  final storage = await LocalStorageService.init();
-  final articleRepo = ArticleRepository(storage);
-  final favoriteRepo = FavoriteRepository(storage);
-  final tagRepo = TagRepository(storage);
-
-  // Auth : swap MockAuthService → ApiAuthService quand l'API sera prête
-  final authRepo = AuthRepository(service: MockAuthService(), storage: storage);
-
-  await Future.wait([
-    favoriteRepo.init(),
-    tagRepo.init(),
-    authRepo.init(), // Restaure la session persistée
-  ]);
-
-  // Vérifie si l'onboarding a déjà été vu
-  final prefs = await SharedPreferences.getInstance();
-  final onboardingDone = prefs.getBool(kOnboardingDoneKey) ?? false;
+  final bootstrap = await AppInitializer.init();
 
   runApp(
     SnackyApp(
-      articleRepo: articleRepo,
-      favoriteRepo: favoriteRepo,
-      tagRepo: tagRepo,
-      authRepo: authRepo,
-      showOnboarding: !onboardingDone,
+      articleRepo: bootstrap.articleRepo,
+      favoriteRepo: bootstrap.favoriteRepo,
+      tagRepo: bootstrap.tagRepo,
+      authRepo: bootstrap.authRepo,
+      showOnboarding: bootstrap.showOnboarding,
     ),
   );
 }

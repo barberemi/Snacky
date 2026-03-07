@@ -8,6 +8,7 @@ import 'package:snacky/repositories/auth_repository.dart';
 import 'package:snacky/repositories/favorite_repository.dart';
 import 'package:snacky/repositories/tag_repository.dart';
 import 'package:snacky/screens/login_screen.dart';
+import 'package:snacky/widgets/user_avatar.dart';
 import '../widgets/tag_selector.dart';
 import '../widgets/news_card.dart';
 import '../widgets/news_card_skeleton.dart';
@@ -384,7 +385,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             onPressed: _openLogin,
                           )
                         else
-                          _UserAvatar(user: user, onLogout: _logout),
+                          UserAvatar(user: user, onLogout: _logout),
                       ],
                     ),
                   ],
@@ -566,41 +567,6 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
       ),
     );
-  }
-}
-
-/// Avatar cliquable affiché quand l'utilisateur est connecté.
-/// Un appui long (ou un tap) ouvre un menu avec l'option de déconnexion.
-class _UserAvatar extends StatelessWidget {
-  final AuthUser user;
-  final VoidCallback onLogout;
-
-  const _UserAvatar({required this.user, required this.onLogout});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _showMenu(context),
-      child: Tooltip(
-        message: user.name,
-        child: CircleAvatar(
-          radius: 18,
-          backgroundColor: const Color(0xFF3F51B5),
-          child: Text(
-            user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showMenu(BuildContext context) {
-    // ...existing code...
   }
 }
 

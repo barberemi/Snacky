@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:snacky/models/article.dart';
+import 'package:snacky/widgets/confidence_badge.dart';
 
 class ArticleDetailScreen extends StatefulWidget {
   final Article article;
@@ -188,7 +189,10 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                   const SizedBox(height: 16),
 
                   // Badge de confiance
-                  _ConfidenceDetail(article: widget.article),
+                  ConfidenceDetail(
+                    confidence: widget.article.confidence,
+                    reason: widget.article.confidenceReason,
+                  ),
                   const SizedBox(height: 20),
 
                   // Divider
@@ -306,58 +310,6 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           size: 64,
           color: _brandColor.withOpacity(0.3),
         ),
-      ),
-    );
-  }
-}
-
-/// Section confiance détaillée pour la page détail
-class _ConfidenceDetail extends StatelessWidget {
-  final Article article;
-  const _ConfidenceDetail({required this.article});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final c = article.confidence;
-    final bg = isDark ? c.color.withOpacity(0.15) : c.backgroundColor;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: c.color.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(c.icon, size: 18, color: c.color),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Fiabilité : ${c.label}',
-                  style: TextStyle(
-                    color: c.color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-                if (article.confidenceReason != null)
-                  Text(
-                    article.confidenceReason!,
-                    style: TextStyle(
-                      color: c.color.withOpacity(0.85),
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -1,16 +1,16 @@
-import '../services/mock_api_service.dart';
+import '../services/article_service.dart';
 import '../services/local_storage_service.dart';
 
 /// Repository qui gère les tags de l'utilisateur.
 /// Les tags ajoutés manuellement sont persistés via shared_preferences.
 class TagRepository {
-  final MockApiService _apiService;
+  final ArticleService _articleService;
   final LocalStorageService _storage;
 
-  List<String> _userTags = []; // Tags personnalisés persistés
+  List<String> _userTags = [];
 
-  TagRepository(this._storage, {MockApiService? apiService})
-    : _apiService = apiService ?? MockApiService();
+  TagRepository(this._storage, {required ArticleService articleService})
+    : _articleService = articleService;
 
   /// À appeler au démarrage pour charger les tags persistés
   Future<void> init() async {
@@ -19,7 +19,7 @@ class TagRepository {
 
   /// Récupère les tags : "Tout" + "Favoris" + tags API + tags ajoutés par l'user
   Future<List<String>> getTags({required String userId}) async {
-    final apiTags = await _apiService.fetchTags(userId: userId);
+    final apiTags = await _articleService.fetchTags(userId: userId);
     // Fusion sans doublon : tags API + tags perso
     final merged = {...apiTags, ..._userTags}.toList();
     return ['Tout', 'Favoris', ...merged];

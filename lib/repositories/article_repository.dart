@@ -1,5 +1,5 @@
 import '../models/article.dart';
-import '../services/mock_api_service.dart';
+import '../services/article_service.dart';
 import '../services/local_storage_service.dart';
 
 /// Repository qui gère la récupération et le cache journalier des articles.
@@ -11,13 +11,13 @@ import '../services/local_storage_service.dart';
 /// - Si le cache est encore frais (même jour), on l'utilise directement.
 /// - Les articles en cache expirent automatiquement le lendemain.
 class ArticleRepository {
-  final MockApiService _apiService;
+  final ArticleService _articleService;
   final LocalStorageService _storage;
 
   List<Article> _cachedArticles = [];
 
-  ArticleRepository(this._storage, {MockApiService? apiService})
-    : _apiService = apiService ?? MockApiService();
+  ArticleRepository(this._storage, {required ArticleService articleService})
+    : _articleService = articleService;
 
   /// À appeler au démarrage : charge le cache ou refetch si périmé
   Future<List<Article>> getAllArticles({required String userId}) async {
@@ -56,7 +56,7 @@ class ArticleRepository {
     }
 
     // Nouveaux articles depuis l'API
-    final newArticles = await _apiService.fetchArticlesByTag(
+    final newArticles = await _articleService.fetchArticlesByTag(
       userId: userId,
       tag: tag,
     );
@@ -83,7 +83,7 @@ class ArticleRepository {
   // ─── Privé ────────────────────────────────────────────────────────────────
 
   Future<List<Article>> _fetchAndCache({required String userId}) async {
-    final articles = await _apiService.fetchAllArticles(userId: userId);
+    final articles = await _articleService.fetchAllArticles(userId: userId);
     _cachedArticles = articles;
     await _storage.writeCachedArticles(
       articles.map((a) => a.toJson()).toList(),
