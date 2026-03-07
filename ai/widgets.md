@@ -29,13 +29,13 @@ TagSelector(
 - Utilise `TagChip`
 
 ### `ConfidenceBadge` — `widgets/confidence_badge.dart`
-Badge compact (icon + label) pour les cards.  
+Badge compact (icon + label) pour les cards. Ce fichier est aussi un **barrel** — importer `confidence_badge.dart` donne accès à `ConfidenceDetail` aussi.
 ```dart
 ConfidenceBadge(confidence: article.confidence)
 ```
 
-### `ConfidenceDetail` — `widgets/confidence_badge.dart`
-Bloc élargi avec raison, pour la page détail.  
+### `ConfidenceDetail` — `widgets/confidence_detail.dart`
+Bloc élargi avec raison, pour la page détail.
 ```dart
 ConfidenceDetail(confidence: article.confidence, reason: article.confidenceReason)
 ```
@@ -58,12 +58,13 @@ NewsListSkeleton(count: 5)   // utilisé dans SearchScreen pendant _isLoading
 ```
 
 ### `auth_widgets.dart` — `widgets/auth_widgets.dart`
-Widgets partagés entre `LoginScreen` et `RegisterScreen` :  
-- `SnackyField` : champ de formulaire stylé  
-- `SnackyButton` : bouton principal avec état loading  
-- `AuthErrorBanner` : bandeau d'erreur rouge  
-- `AuthLinkText` : lien "Tu n'as pas de compte ? S'inscrire"  
-- Constante : `kBrandColor = Color(0xFF3F51B5)`
+**Barrel** — importer ce fichier unique suffit pour tout avoir. Expose aussi `kBrandColor`.  
+Widgets dans leurs propres fichiers :
+- `SnackyField` → `widgets/snacky_field.dart` : champ de formulaire stylé  
+- `SnackyButton` → `widgets/snacky_button.dart` : bouton principal avec état loading  
+- `AuthErrorBanner` → `widgets/auth_error_banner.dart` : bandeau d'erreur rouge  
+- `AuthLinkText` → `widgets/auth_link_text.dart` : lien "Tu n'as pas de compte ? S'inscrire"  
+- Constante : `kBrandColor = Color(0xFF3F51B5)` (définie dans le barrel)
 
 ## Widgets internes à ne pas extraire
 Ces classes privées `_` sont légitimement locales (trop spécifiques, pas réutilisées) :
