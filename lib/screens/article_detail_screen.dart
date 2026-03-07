@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:snacky/models/article.dart';
+import 'package:snacky/services/article_formatter_service.dart';
 import 'package:snacky/widgets/confidence_badge.dart';
+
+const _formatter = ArticleFormatterService();
 
 class ArticleDetailScreen extends StatefulWidget {
   final Article article;
@@ -172,6 +175,37 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                         style: TextStyle(
                           color: theme.colorScheme.onSurfaceVariant,
                           fontSize: 12,
+                        ),
+                      ),
+                      const Spacer(),
+                      // ── Temps de lecture ──────────────────────────────
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _brandColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.schedule_rounded,
+                              size: 11,
+                              color: _brandColor.withOpacity(0.7),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatter.readingTimeLabel(widget.article),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: _brandColor.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

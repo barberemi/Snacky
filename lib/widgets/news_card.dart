@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:snacky/models/article.dart';
 import 'package:snacky/screens/article_detail_screen.dart';
+import 'package:snacky/services/article_formatter_service.dart';
 import 'package:snacky/widgets/confidence_badge.dart';
 import 'package:shimmer/shimmer.dart';
+
+const _formatter = ArticleFormatterService();
 
 class NewsCard extends StatefulWidget {
   final Article article;
@@ -109,7 +112,7 @@ class _NewsCardState extends State<NewsCard> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              "${widget.article.source} • ${widget.article.time}",
+                              "${widget.article.source} • ${widget.article.time} · ${_formatter.readingTimeLabel(widget.article)}",
                               style: TextStyle(
                                 color: Theme.of(
                                   context,

@@ -72,7 +72,6 @@ ScaffoldMessenger.of(context).showSnackBar(SnackBar(
 
 | Quoi | Où brancher | Service disponible |
 |---|---|---|
-| Temps de lecture | `ArticleDetailScreen` après le titre, ou `NewsCard` | `ArticleFormatterService.readingTimeLabel()` |
 | Date relative | `NewsCard` à côté de `article.time` | `ArticleFormatterService.relativeDate()` |
 | Tri via service | `SearchScreen._sortOrder` | `ArticleSortService` |
 | `_userId` dynamique | `SearchScreen` | `authRepo.currentUser?.id ?? 'user_1'` |
